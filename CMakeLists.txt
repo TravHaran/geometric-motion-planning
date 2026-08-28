@@ -41,29 +41,29 @@ target_link_libraries(
     SFML::System
 )
 
-# # ---------------------------------
-# # demo 1b
-# # ---------------------------------
-# add_executable(
-#     demo_1b
-#     demos/demo_1b_point_in_polygon.cpp
-#     src/geometry/Geometry.cpp
-#     src/visualization/Renderer.cpp
-# )
+# ---------------------------------
+# demo 1b
+# ---------------------------------
+add_executable(
+    demo_1b
+    demos/demo_1b_point_in_polygon.cpp
+    src/geometry/Geometry.cpp
+    src/visualization/Renderer.cpp
+)
 
-# target_include_directories(
-#     demo_1b
-#     PRIVATE
-#     src
-# )
+target_include_directories(
+    demo_1b
+    PRIVATE
+    src
+)
 
-# target_link_libraries(
-#     demo_1b
-#     PRIVATE
-#     SFML::Graphics
-#     SFML::Window
-#     SFML::System
-# )
+target_link_libraries(
+    demo_1b
+    PRIVATE
+    SFML::Graphics
+    SFML::Window
+    SFML::System
+)
 
 
 # ---------------------------------
