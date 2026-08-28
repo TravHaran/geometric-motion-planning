@@ -74,6 +74,58 @@ The path is collision free if every one of these segments is collision free:
 \operatorname{CollisionFree}\!\left(\overline{P_iP_{i+1}}\right).
 \]
 
+An empty path contains no motion segments and is treated as collision free by
+the current representation. A one-waypoint path is a stationary configuration:
+it is collision free only when that waypoint does not lie inside or on the
+boundary of an obstacle.
+
+Demo 1C visualizes this path-level predicate. The entire path is drawn green
+when every segment is collision free and red when any part of the path is
+invalid. This emphasizes the distinction between local segment validity and
+whole-path validity.
+
+\subsection{Phase 1 Conventions and Assumptions}
+
+The geometry kernel developed in Phase 1 uses the following conventions:
+\begin{itemize}
+    \item obstacle polygons are simple polygons with at least three vertices;
+    \item self-intersecting polygons are outside the current model;
+    \item a point on an obstacle boundary is considered in collision;
+    \item a segment that touches an obstacle edge or vertex is considered in
+    collision; and
+    \item collinearity uses a small floating-point tolerance rather than exact
+    arithmetic.
+\end{itemize}
+
+The implementation is deliberately layered. Higher-level motion-validity
+queries are built from lower-level geometric predicates:
+\[
+\operatorname{orientation}
+\longrightarrow
+\operatorname{segmentIntersection}
+\longrightarrow
+\operatorname{polygonIntersection}
+\longrightarrow
+\operatorname{segmentCollision}
+\longrightarrow
+\operatorname{pathCollision}.
+\]
+
 This creates the first complete geometric motion-validity test in the
-project. Later planners will repeatedly call these collision predicates when
-constructing visibility graphs, PRMs, RRTs, and humanoid footstep transitions.
+project. Later planners will build on these predicates when constructing
+visibility graphs, PRMs, RRTs, and humanoid footstep transitions.
+
+\subsection{Transition to Visibility Graphs}
+
+Phase 2 introduces an important distinction between \emph{collision-free
+motion} and \emph{geometric visibility}. The current collision convention
+rejects any segment that touches an obstacle boundary. This behavior should
+remain unchanged for ordinary motion validation.
+
+A visibility graph, however, uses obstacle vertices as graph nodes. A candidate
+visibility edge may therefore need to terminate exactly at an obstacle vertex
+without passing through the obstacle interior. Consequently, the ordinary
+collision-free-segment predicate cannot simply be weakened or reused without
+additional visibility-specific reasoning. Phase 2 will introduce a separate
+visibility predicate that preserves the Phase 1 collision semantics while
+handling valid obstacle-vertex endpoints.

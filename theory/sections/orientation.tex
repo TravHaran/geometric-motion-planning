@@ -63,3 +63,11 @@ In this project,
 
 Values sufficiently close to zero are therefore treated as zero when
 checking collinearity.
+
+This tolerance improves the behavior of interactive geometric tests, but it
+does not make the geometry kernel an exact-arithmetic or fully robust
+computational-geometry implementation. In particular, some orientation sign
+tests still use ordinary floating-point comparisons. The current predicates
+are intended for motion-planning experiments rather than numerically
+pathological inputs. More sophisticated robust predicates can be introduced
+later if they become necessary.

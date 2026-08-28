@@ -58,9 +58,13 @@ connects back to the first. Thus the edges are
 This modular indexing automatically generates the closing edge
 $p_{n-1}\rightarrow p_0$.
 
-For this project, obstacles are assumed to be \emph{simple polygons} unless
-otherwise stated. A simple polygon has no self-intersections between
-non-adjacent edges.
+For this project, a valid polygon contains at least three vertices. Polygons
+with fewer than three vertices are treated as invalid and therefore produce no
+polygon edges.
+
+Obstacles are assumed to be \emph{simple polygons} unless otherwise stated. A
+simple polygon has no self-intersections between non-adjacent edges.
+Self-intersecting polygons are outside the current geometric model.
 
 \subsection{Path}
 

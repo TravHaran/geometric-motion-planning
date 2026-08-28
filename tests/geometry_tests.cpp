@@ -107,6 +107,13 @@ void testPointInPolygon() {
         {0.0, 3.0}
     }};
 
+    Polygon clockwiseRectangle{{
+        {0.0, 0.0},
+        {0.0, 3.0},
+        {4.0, 3.0},
+        {4.0, 0.0}
+    }};
+
     Point inside{2.0, 1.5};
     Point outside{5.0, 1.5};
 
@@ -118,6 +125,9 @@ void testPointInPolygon() {
 
     assert(pointInPolygon(onEdge, rectangle));
     assert(pointInPolygon(onVertex, rectangle));
+
+    assert(pointInPolygon({2.0, 1.0}, clockwiseRectangle));
+    assert(!pointInPolygon({5.0, 1.0}, clockwiseRectangle));
 }
 
 void testPointInConcavePolygon() {
@@ -276,6 +286,25 @@ void testIsPathCollisionFree() {
     }};
 
     assert(isPathCollisionFree(anyPath, noObstacles));
+
+    Path singlePointInside{{{2.0, 1.0}}};
+    assert(!isPathCollisionFree(singlePointInside, obstacles));
+}
+
+void testInvalidPolygonEdges()
+{
+    Polygon empty{{}};
+    Polygon onePoint{{
+        {0.0, 0.0}
+    }};
+    Polygon twoPoints{{
+        {0.0, 0.0},
+        {1.0, 1.0}
+    }};
+
+    assert(polygonEdges(empty).empty());
+    assert(polygonEdges(onePoint).empty());
+    assert(polygonEdges(twoPoints).empty());
 }
 
 
@@ -290,6 +319,7 @@ int main() {
     testIsSegmentCollisionFree();
     testMultipleObstacles();
     testIsPathCollisionFree();
+    testInvalidPolygonEdges();
     std::cout << "All geometry tests passed!\n";
 
     return 0;

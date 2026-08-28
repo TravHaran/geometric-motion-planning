@@ -1,5 +1,6 @@
 #include "Geometry.hpp"
-#include "algorithm"
+
+#include <algorithm>
 #include <cmath>
 
 /*
@@ -16,6 +17,12 @@ constexpr double EPSILON = 1e-9;
 bool approximatelyZero(double val){
     return std::abs(val) < EPSILON;
 }
+
+/*
+Current geometric predicates use an epsilon for collinearity tests 
+but are not designed as exact/robust predicates for numerically 
+pathological inputs.
+*/
 
 double orientation(
     const Point& a,
@@ -72,6 +79,7 @@ bool segmentsIntersect(
 std::vector<Segment> polygonEdges(const Polygon& polygon) {
     std::vector<Segment> edges;
     std::size_t len = polygon.vertices.size();
+    if(len < 3) return {};
     for(std::size_t i = 0; i < len; i++){
         Segment seg = {polygon.vertices[i], polygon.vertices[(i+1) %len]};
         edges.push_back(seg);
@@ -148,7 +156,19 @@ bool isSegmentCollisionFree(
 bool isPathCollisionFree(
     const Path& path,
     const std::vector<Polygon>& obstacles
-){
+){  
+    if (path.waypoints.empty()) return true; // empty path
+
+    if (path.waypoints.size() == 1){ // single point path
+        for (const Polygon& obstacle : obstacles){
+            if (pointInPolygon(path.waypoints[0], obstacle)){
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     // check every consecutive pair for collisions
 
     for(std::size_t i = 0; i + 1 < path.waypoints.size(); i++){

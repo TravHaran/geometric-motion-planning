@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "Point.hpp"
 #include "Segment.hpp"
 #include "Polygon.hpp"
