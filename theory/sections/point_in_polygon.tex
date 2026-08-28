@@ -1,0 +1,71 @@
+\section{Point-in-Polygon Testing}
+
+Given a polygon $\mathcal{P}$ and query point $q$, we want to determine
+whether $q$ lies inside the polygon. The implementation in this project uses
+the winding-number algorithm.
+
+\subsection{Winding Number}
+
+Imagine tracing the polygon boundary while observing how many times the
+polygon winds around the query point. For a simple polygon,
+\[
+WN(q)=
+\begin{cases}
+0, & \text{if } q \text{ is outside},\\
++1 \text{ or } -1, & \text{if } q \text{ is inside}.
+\end{cases}
+\]
+
+The sign depends on whether the polygon vertices are ordered
+counterclockwise or clockwise. The implementation therefore uses
+\[
+WN(q)\neq 0
+\]
+as the inside condition.
+
+\subsection{Upward Crossings}
+
+For an edge from $A$ to $B$, an upward crossing occurs when
+\[
+y_A\leq y_q \qquad \text{and} \qquad y_B>y_q.
+\]
+If additionally
+\[
+\operatorname{orientation}(A,B,q)>0,
+\]
+the winding number is incremented:
+\[
+WN\leftarrow WN+1.
+\]
+
+\subsection{Downward Crossings}
+
+A downward crossing occurs when
+\[
+y_B\leq y_q \qquad \text{and} \qquad y_A>y_q.
+\]
+If
+\[
+\operatorname{orientation}(A,B,q)<0,
+\]
+then
+\[
+WN\leftarrow WN-1.
+\]
+
+The asymmetric inequalities prevent polygon vertices lying exactly on the
+horizontal query line from being counted twice.
+
+\subsection{Boundary Convention}
+
+For collision detection, this project treats points lying on the polygon
+boundary as inside the obstacle. Therefore, before updating the winding
+number, each edge is checked using the point-on-segment predicate.
+
+\subsection{Complexity}
+
+Each polygon edge is examined exactly once. For a polygon containing $n$
+vertices,
+\[
+T(n)=O(n).
+\]

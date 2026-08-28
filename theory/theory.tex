@@ -1,0 +1,68 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{listings}
+
+\hypersetup{
+    hidelinks,
+    pdftitle={Geometric Motion Planning: Theory and Algorithms},
+    pdfauthor={Travis Haran}
+}
+
+\setcounter{tocdepth}{2}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    columns=fullflexible,
+    keepspaces=true,
+    frame=single,
+    showstringspaces=false
+}
+
+\title{\textbf{Geometric Motion Planning}\\[0.35em]\large Theory and Algorithms}
+\author{Travis Haran}
+\date{\today}
+
+\begin{document}
+
+\pagenumbering{roman}
+\maketitle
+\thispagestyle{empty}
+\clearpage
+
+\tableofcontents
+\clearpage
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\section{Introduction}
+
+This document contains the theoretical foundations behind the
+Geometric Motion Planning project.
+
+The goal of the project is to develop a motion-planning framework
+from first principles, beginning with fundamental computational
+geometry operations and gradually progressing toward classical
+robot motion planning, configuration-space methods, sampling-based
+planning, and humanoid footstep planning.
+
+The theory presented here is developed alongside the implementation.
+Each major algorithm includes its mathematical foundation, geometric
+interpretation, computational complexity, and connection to the C++
+implementation.
+
+\input{sections/geometry_primitives}
+\input{sections/orientation}
+\input{sections/segment_intersection}
+\input{sections/point_in_polygon}
+\input{sections/collision_checking}
+
+\end{document}

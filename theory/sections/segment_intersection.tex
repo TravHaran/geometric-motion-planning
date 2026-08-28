@@ -1,0 +1,56 @@
+\section{Segment Intersection}
+
+Given two line segments $\overline{AB}$ and $\overline{CD}$, we want to
+determine whether they intersect. This operation is fundamental to collision
+detection, polygon validation, visibility testing, and motion planning.
+
+\subsection{Proper Intersection}
+
+Compute
+\begin{align*}
+o_1 &= \operatorname{orientation}(A,B,C), &
+o_2 &= \operatorname{orientation}(A,B,D),\\
+o_3 &= \operatorname{orientation}(C,D,A), &
+o_4 &= \operatorname{orientation}(C,D,B).
+\end{align*}
+
+For a proper crossing, $C$ and $D$ must lie on opposite sides of the line
+through $AB$, while $A$ and $B$ must lie on opposite sides of the line
+through $CD$. Thus
+\[
+o_1o_2<0 \qquad \text{and} \qquad o_3o_4<0.
+\]
+Equivalently,
+\[
+(o_1o_2<0)\land(o_3o_4<0).
+\]
+
+\subsection{Degenerate Cases}
+
+The proper-intersection test alone does not handle endpoint touching,
+collinear overlap, or one endpoint lying on another segment. These cases
+require a point-on-segment test.
+
+A point $P$ lies on $\overline{AB}$ if
+\[
+\operatorname{orientation}(A,B,P)=0
+\]
+and
+\begin{align*}
+\min(x_A,x_B)&\leq x_P\leq\max(x_A,x_B),\\
+\min(y_A,y_B)&\leq y_P\leq\max(y_A,y_B).
+\end{align*}
+
+In the current project convention, endpoint touching and collinear overlap
+both count as intersection.
+
+\subsection{Complexity}
+
+The segment-intersection test performs a constant number of arithmetic
+operations. Therefore,
+\[
+T(n)=O(1).
+\]
+
+Although simple, this predicate becomes one of the most frequently used
+operations in later motion-planning algorithms.

@@ -1,0 +1,78 @@
+\section{Geometric Primitives}
+
+The motion-planning system begins with a small collection of geometric
+primitives. These structures provide the representation used by all later
+geometry and planning algorithms.
+
+\subsection{Point}
+
+A two-dimensional point is represented as
+\[
+p=(x,y), \qquad x,y\in\mathbb{R}.
+\]
+
+In the implementation, coordinates are stored using double-precision
+floating-point values. A point is represented in C++ as:
+
+\begin{lstlisting}[language=C++]
+struct Point {
+    double x;
+    double y;
+};
+\end{lstlisting}
+
+\subsection{Line Segment}
+
+A line segment is defined by two endpoints $A$ and $B$ and is denoted by
+$\overline{AB}$. If
+\[
+A=(x_A,y_A), \qquad B=(x_B,y_B),
+\]
+then the segment contains every point
+\[
+P(t)=A+t(B-A), \qquad 0\leq t\leq 1.
+\]
+
+The C++ representation is:
+
+\begin{lstlisting}[language=C++]
+struct Segment {
+    Point a;
+    Point b;
+};
+\end{lstlisting}
+
+\subsection{Polygon}
+
+A polygon is represented as an ordered sequence of vertices
+\[
+\mathcal{P}=\{p_0,p_1,\ldots,p_{n-1}\}.
+\]
+
+Each consecutive pair of vertices forms an edge, and the final vertex
+connects back to the first. Thus the edges are
+\[
+\left(p_i,p_{(i+1)\bmod n}\right), \qquad 0\leq i<n.
+\]
+
+This modular indexing automatically generates the closing edge
+$p_{n-1}\rightarrow p_0$.
+
+For this project, obstacles are assumed to be \emph{simple polygons} unless
+otherwise stated. A simple polygon has no self-intersections between
+non-adjacent edges.
+
+\subsection{Path}
+
+A robot path is represented using an ordered list of waypoints
+\[
+P_0,P_1,\ldots,P_k.
+\]
+
+The corresponding path segments are
+\[
+(P_0,P_1),(P_1,P_2),\ldots,(P_{k-1},P_k).
+\]
+
+Storing waypoints rather than explicitly storing every segment avoids
+duplicating information and simplifies path modification.

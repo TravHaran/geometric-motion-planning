@@ -1,0 +1,65 @@
+\section{Orientation and the 2D Cross Product}
+
+One of the most important predicates in computational geometry is the
+orientation test. Given three points
+\[
+A=(x_A,y_A),\qquad B=(x_B,y_B),\qquad C=(x_C,y_C),
+\]
+we want to determine whether traveling from $A$ to $B$ and then toward $C$
+represents a left turn, right turn, or no turn.
+
+Define
+\[
+\overrightarrow{AB}=B-A, \qquad \overrightarrow{AC}=C-A.
+\]
+The two-dimensional cross product is
+\[
+\overrightarrow{AB}\times\overrightarrow{AC}
+=(x_B-x_A)(y_C-y_A)-(y_B-y_A)(x_C-x_A).
+\]
+
+We therefore define
+\[
+\operatorname{orientation}(A,B,C)
+=(x_B-x_A)(y_C-y_A)-(y_B-y_A)(x_C-x_A).
+\]
+
+The sign gives the geometric relationship:
+\[
+\operatorname{orientation}(A,B,C)
+\begin{cases}
+>0, & \text{counterclockwise / left turn},\\
+<0, & \text{clockwise / right turn},\\
+=0, & \text{collinear}.
+\end{cases}
+\]
+
+\subsection{Geometric Interpretation}
+
+The magnitude of the cross product is the area of the parallelogram formed
+by $\overrightarrow{AB}$ and $\overrightarrow{AC}$. Therefore the area of
+triangle $ABC$ is
+\[
+\operatorname{Area}(ABC)
+=\frac{1}{2}\left|\operatorname{orientation}(A,B,C)\right|.
+\]
+
+If the orientation is zero, the triangle has zero area, meaning that the
+three points are collinear.
+
+\subsection{Floating-Point Considerations}
+
+When coordinates are represented using floating-point values, exact
+comparison with zero can be unreliable. Instead, a small tolerance
+$\varepsilon$ is used:
+\[
+|x|<\varepsilon.
+\]
+
+In this project,
+\[
+\varepsilon=10^{-9}.
+\]
+
+Values sufficiently close to zero are therefore treated as zero when
+checking collinearity.

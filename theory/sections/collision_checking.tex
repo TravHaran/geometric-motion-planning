@@ -1,0 +1,79 @@
+\section{Collision Checking}
+
+The geometric predicates developed so far can now be combined to answer
+questions relevant to robot motion.
+
+\subsection{Segment--Polygon Boundary Intersection}
+
+Given a segment $s$ and polygon $\mathcal{P}$, the segment is tested against
+every polygon edge. If
+\[
+E(\mathcal{P})=\{e_0,e_1,\ldots,e_{n-1}\},
+\]
+then we evaluate
+\[
+\operatorname{segmentsIntersect}(s,e_i)
+\]
+for every edge $e_i$.
+
+The segment intersects the polygon boundary if
+\[
+\exists e_i\in E(\mathcal{P}) \text{ such that } s\cap e_i\neq\varnothing.
+\]
+For a polygon containing $n$ edges, this requires $O(n)$ segment-intersection
+tests.
+
+\subsection{Why Boundary Intersection Is Not Enough}
+
+Consider a segment whose two endpoints lie completely inside a polygon. The
+segment may never cross the polygon boundary. In that case,
+\[
+\text{boundary intersection}=\text{false},
+\]
+even though the segment lies entirely inside the obstacle.
+
+This demonstrates an important distinction between \emph{boundary
+intersection} and \emph{collision}.
+
+\subsection{Collision-Free Segment}
+
+A segment is considered collision free only if, for every obstacle,
+\begin{enumerate}
+    \item the segment does not intersect the obstacle boundary,
+    \item the first endpoint is not inside the obstacle, and
+    \item the second endpoint is not inside the obstacle.
+\end{enumerate}
+
+Symbolically,
+\[
+\operatorname{CollisionFree}(s)
+=\neg\bigl(
+\operatorname{BoundaryIntersection}(s)
+\lor \operatorname{Inside}(s.a)
+\lor \operatorname{Inside}(s.b)
+\bigr).
+\]
+
+Touching an obstacle boundary is currently considered a collision.
+
+\subsection{Collision-Free Path}
+
+A path consisting of waypoints
+\[
+P_0,P_1,\ldots,P_k
+\]
+contains the segments
+\[
+(P_i,P_{i+1}), \qquad 0\leq i<k.
+\]
+
+The path is collision free if every one of these segments is collision free:
+\[
+\operatorname{CollisionFreePath}(\mathcal{P})
+=\bigwedge_{i=0}^{k-1}
+\operatorname{CollisionFree}\!\left(\overline{P_iP_{i+1}}\right).
+\]
+
+This creates the first complete geometric motion-validity test in the
+project. Later planners will repeatedly call these collision predicates when
+constructing visibility graphs, PRMs, RRTs, and humanoid footstep transitions.
