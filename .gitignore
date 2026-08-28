@@ -21,3 +21,6 @@ build/
 *.synctex.gz
 *.fls
 *.fdb_latexmk
+
+# Generated theory PDF
+theory/theory.pdf
