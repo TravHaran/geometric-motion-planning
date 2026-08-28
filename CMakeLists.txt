@@ -17,30 +17,53 @@ find_package(
     COMPONENTS Graphics Window System
 )
 # ---------------------------------
-# Main GUI application
+# demo 1a
 # ---------------------------------
 
 add_executable(
-    planner
-
-    src/main.cpp
+    demo_1a
+    demos/demo_1a_segment_intersection.cpp
     src/geometry/Geometry.cpp
     src/visualization/Renderer.cpp
 )
 
 target_include_directories(
-    planner
+    demo_1a
     PRIVATE
     src
 )
 
 target_link_libraries(
-    planner
+    demo_1a
     PRIVATE
     SFML::Graphics
     SFML::Window
     SFML::System
 )
+
+# # ---------------------------------
+# # demo 1b
+# # ---------------------------------
+# add_executable(
+#     demo_1b
+#     demos/demo_1b_point_in_polygon.cpp
+#     src/geometry/Geometry.cpp
+#     src/visualization/Renderer.cpp
+# )
+
+# target_include_directories(
+#     demo_1b
+#     PRIVATE
+#     src
+# )
+
+# target_link_libraries(
+#     demo_1b
+#     PRIVATE
+#     SFML::Graphics
+#     SFML::Window
+#     SFML::System
+# )
 
 
 # ---------------------------------

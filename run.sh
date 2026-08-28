@@ -15,4 +15,10 @@ fi
 
 cmake --build .
 
-./planner
+if [ -z "$1" ]; then
+    echo "Usage: ./run.sh <demo>"
+    echo "Example: ./run.sh demo_1a"
+    exit 1
+fi
+
+./"$1"
