@@ -4,6 +4,7 @@
 
 #include "geometry/Polygon.hpp"
 #include "geometry/Segment.hpp"
+#include "geometry/Geometry.hpp"
 #include "visualization/Renderer.hpp"
 
 int main(){
@@ -14,6 +15,8 @@ int main(){
 
     Polygon polygon;
     bool polygonFinalized = false;
+    Point queryPoint;
+    bool queryPointSet = false;
 
     while (window.isOpen()){
         // -------------------------
@@ -42,6 +45,25 @@ int main(){
                         << clickedPoint.x << ", "
                         << clickedPoint.y << ")\n";
                 }
+                // right-click
+                if (
+                    mousePressed->button == sf::Mouse::Button::Right &&
+                    polygonFinalized
+                ){
+                    queryPoint = Point{
+                        static_cast<double>(mousePressed->position.x),
+                        static_cast<double>(mousePressed->position.y)
+                    };
+
+                    queryPointSet = true;
+                }
+                bool inside = pointInPolygon(queryPoint, polygon);
+                std::cout
+                    << "Query point: ("
+                    << queryPoint.x << ", "
+                    << queryPoint.y << ") -> "
+                    << (inside ? "inside" : "outside")
+                    << "\n";
             }
             // Keyboard input
             if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()){
@@ -59,6 +81,7 @@ int main(){
                 {
                     polygon.vertices.clear();
                     polygonFinalized = false;
+                    queryPointSet = false;
 
                     std::cout << "Polygon cleared.\n";
                 }
@@ -88,6 +111,10 @@ int main(){
 
             drawSegment(window, closingEdge);
         }
+        if (queryPointSet){
+            drawPoint(window, queryPoint);
+        }
+
         window.display();
     }
 
