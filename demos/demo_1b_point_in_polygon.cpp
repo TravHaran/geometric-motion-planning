@@ -17,6 +17,7 @@ int main(){
     bool polygonFinalized = false;
     Point queryPoint;
     bool queryPointSet = false;
+    bool queryPointInside = false;
 
     while (window.isOpen()){
         // -------------------------
@@ -57,12 +58,12 @@ int main(){
 
                     queryPointSet = true;
                 }
-                bool inside = pointInPolygon(queryPoint, polygon);
+                queryPointInside = pointInPolygon(queryPoint, polygon);
                 std::cout
                     << "Query point: ("
                     << queryPoint.x << ", "
                     << queryPoint.y << ") -> "
-                    << (inside ? "inside" : "outside")
+                    << (queryPointInside ? "inside" : "outside")
                     << "\n";
             }
             // Keyboard input
@@ -82,6 +83,7 @@ int main(){
                     polygon.vertices.clear();
                     polygonFinalized = false;
                     queryPointSet = false;
+                    queryPointInside = false;
 
                     std::cout << "Polygon cleared.\n";
                 }
@@ -112,7 +114,11 @@ int main(){
             drawSegment(window, closingEdge);
         }
         if (queryPointSet){
-            drawPoint(window, queryPoint);
+            sf::Color queryColor =
+                queryPointInside
+                    ? sf::Color::Red
+                    : sf::Color::Green;
+            drawPoint(window, queryPoint, queryColor);
         }
 
         window.display();

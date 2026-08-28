@@ -2,7 +2,8 @@
 
 void drawPoint(
     sf::RenderWindow& window,
-    const Point& point
+    const Point& point,
+    const sf::Color& color
 ){
     sf::CircleShape circle(5.0f);
 
@@ -12,6 +13,8 @@ void drawPoint(
         static_cast<float>(point.x),
         static_cast<float>(point.y)
     });
+
+    circle.setFillColor(color);
 
     window.draw(circle);
 }

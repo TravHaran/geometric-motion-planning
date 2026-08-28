@@ -6,7 +6,8 @@
 
 void drawPoint(
     sf::RenderWindow& window,
-    const Point& point
+    const Point& point,
+    const sf::Color& color = sf::Color::White
 );
 
 void drawSegment(
