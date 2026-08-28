@@ -18,6 +18,7 @@ int main()
 
     Polygon obstacle;
     bool obstacleFinalized = false;
+    std::vector<Polygon> obstacles;
 
     Path path;
 
@@ -43,8 +44,7 @@ int main()
                 if (
                     mousePressed->button == sf::Mouse::Button::Left &&
                     !obstacleFinalized
-                )
-                {
+                ){
                     Point clickedPoint{
                         static_cast<double>(mousePressed->position.x),
                         static_cast<double>(mousePressed->position.y)
@@ -63,8 +63,7 @@ int main()
                 if (
                     mousePressed->button == sf::Mouse::Button::Right &&
                     obstacleFinalized
-                )
-                {
+                ){
                     Point waypoint{
                         static_cast<double>(mousePressed->position.x),
                         static_cast<double>(mousePressed->position.y)
@@ -76,6 +75,17 @@ int main()
                         << "Added path waypoint: ("
                         << waypoint.x << ", "
                         << waypoint.y << ")\n";
+                    
+                    if (path.waypoints.size() >= 2)
+                    {
+                        bool pathCollisionFree =
+                            isPathCollisionFree(path, obstacles);
+
+                        std::cout
+                            << "Entire path: "
+                            << (pathCollisionFree ? "VALID" : "INVALID")
+                            << "\n";
+                    }
                 }
             }
 
@@ -91,6 +101,7 @@ int main()
                 )
                 {
                     obstacleFinalized = true;
+                    obstacles.push_back(obstacle);
 
                     std::cout << "Obstacle finalized.\n";
                 }
@@ -99,6 +110,7 @@ int main()
                 if (keyPressed->code == sf::Keyboard::Key::R)
                 {
                     obstacle.vertices.clear();
+                    obstacles.clear();
                     obstacleFinalized = false;
 
                     path.waypoints.clear();
@@ -135,10 +147,7 @@ int main()
         }
 
         // Draw closing edge after obstacle is finalized
-        std::vector<Polygon> obstacles;
-        if (obstacleFinalized)
-        {
-            obstacles.push_back(obstacle);
+        if (obstacleFinalized){
             Segment closingEdge{
                 obstacle.vertices.back(),
                 obstacle.vertices.front()
@@ -148,34 +157,35 @@ int main()
         }
 
         // Draw path waypoints
-        for (const Point& waypoint : path.waypoints)
-        {
+        for (const Point& waypoint : path.waypoints){
             drawPoint(window, waypoint);
         }
 
-        // Draw consecutive path segments
-        for (
-            std::size_t i = 0;
-            i + 1 < path.waypoints.size();
-            i++
-        )
-        {
+        // Determine whether the entire path is valid
+        bool pathCollisionFree = true;
+
+        if (path.waypoints.size() >= 2){
+            pathCollisionFree =
+                isPathCollisionFree(path, obstacles);
+        }
+
+        sf::Color pathColor =
+            pathCollisionFree
+                ? sf::Color::Green
+                : sf::Color::Red;
+
+        // Draw the entire path using one color
+        for (std::size_t i = 0; i + 1 < path.waypoints.size(); i++){
             Segment pathSegment{
                 path.waypoints[i],
                 path.waypoints[i + 1]
             };
-            bool collisionFree =
-                isSegmentCollisionFree(
-                    pathSegment,
-                    obstacles
-                );
 
-            sf::Color segmentColor =
-                collisionFree
-                    ? sf::Color::Green
-                    : sf::Color::Red;
-
-            drawSegment(window, pathSegment, segmentColor);
+            drawSegment(
+                window,
+                pathSegment,
+                pathColor
+            );
         }
 
         window.display();
