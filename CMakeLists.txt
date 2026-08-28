@@ -65,6 +65,30 @@ target_link_libraries(
     SFML::System
 )
 
+# ---------------------------------
+# demo 1c
+# ---------------------------------
+add_executable(
+    demo_1c
+
+    demos/demo_1c_path_collision.cpp
+    src/geometry/Geometry.cpp
+    src/visualization/Renderer.cpp
+)
+
+target_include_directories(
+    demo_1c
+    PRIVATE
+    src
+)
+
+target_link_libraries(
+    demo_1c
+    PRIVATE
+    SFML::Graphics
+    SFML::Window
+    SFML::System
+)
 
 # ---------------------------------
 # Geometry unit tests
