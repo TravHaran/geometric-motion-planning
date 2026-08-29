@@ -45,6 +45,27 @@ bool onSegment(
             p.y <= std::max(a.y, b.y);
 }
 
+bool segmentsProperlyIntersect(
+    const Segment& s1,
+    const Segment& s2
+){
+    const Point& A = s1.a;
+    const Point& B = s1.b;
+    const Point& C = s2.a;
+    const Point& D = s2.b;
+
+    double o1 = orientation(A, B, C);
+    double o2 = orientation(A, B, D);
+    double o3 = orientation(C, D, A);
+    double o4 = orientation(C, D, B);
+    // proper intersection
+    // o1 and o2 have opposite signs
+    // o3 and o4 have opposite signs
+    return
+        ((o1 < 0 && o2 > 0) || (o1 > 0 && o2 < 0)) &&
+        ((o3 < 0 && o4 > 0) || (o3 > 0 && o4 < 0));
+}
+
 bool segmentsIntersect(
     const Segment& s1,
     const Segment& s2
@@ -60,12 +81,7 @@ bool segmentsIntersect(
     double o4 = orientation(C, D, B);
     
     // 1. General crossing case
-    // o1 and o2 have opposite signs
-    // o3 and o4 have opposite signs
-    if(
-        ((o1 < 0 && o2 > 0) || (o1 > 0 && o2 < 0) ) &&
-        ((o3 < 0 && o4 > 0) || (o3 > 0 && o4 < 0) )
-    ) return true;
+    if(segmentsProperlyIntersect(s1, s2)) return true;
 
     // Collinear/touching cases
     if(onSegment(A, B, C)) return true;
@@ -96,6 +112,22 @@ bool segmentIntersectsPolygon(const Segment& segment, const Polygon& polygon){
     }
     return false;
 }
+
+bool pointOnPolygonBoundary(
+    const Point& point,
+    const Polygon& polygon
+){
+    std::vector<Segment> edges = polygonEdges(polygon);
+
+    for(const Segment& edge : edges){
+        if(onSegment(edge.a, edge.b, point)){
+            return true;
+        }
+    }
+
+    return false;
+}
+
 
 bool pointInPolygon(
     const Point& point,
@@ -136,6 +168,14 @@ bool pointInPolygon(
         }
     }
     return windingNumber != 0;
+}
+
+bool pointStrictlyInsidePolygon( // inside polygon and not on boundary
+    const Point& point,
+    const Polygon& polygon
+){
+    return pointInPolygon(point, polygon) &&
+           !pointOnPolygonBoundary(point, polygon);
 }
 
 bool isSegmentCollisionFree(
@@ -184,3 +224,84 @@ bool isPathCollisionFree(
     return true;
 }
 
+bool isVisible(
+    const Point& a,
+    const Point& b,
+    const std::vector<Polygon>& obstacles
+){
+    Segment candidate{a, b};
+    constexpr double SAMPLE_DELTA = 1e-6;
+
+    for(const Polygon& obstacle : obstacles){
+        // endpoint-inside test
+        if(pointStrictlyInsidePolygon(a, obstacle) ||
+            pointStrictlyInsidePolygon(b, obstacle)){
+            return false;
+        }
+
+        std::vector<Segment> edges = polygonEdges(obstacle);
+        // proper crossing test
+        for(const Segment& edge : edges){
+            if(segmentsProperlyIntersect(candidate, edge)){
+                return false;
+            }
+        }
+
+        // vertex local-sampling test
+        for(const Point& vertex : obstacle.vertices){
+            if(!onSegment(a, b, vertex)) continue; // skip vertices not on segment
+
+            double t = segmentParameter(a, b, vertex);
+            // If t == 0, the vertex is the start of the candidate segment.
+            // There is no portion of the actual segment before a, so only
+            // the region after the vertex needs to be checked
+            // this will end up getting checked by the t < 1.0 block below.
+            if(t > 0.0){
+                double beforeT = std::max(0.0, t-SAMPLE_DELTA);
+
+                Point before = pointAtSegmentParameter(a, b, beforeT);
+
+                if(pointStrictlyInsidePolygon(before, obstacle)) return false;
+            }
+            // If t == 1, the vertex is the end of the candidate segment.
+            // There is no portion of the actual segment after b, so only
+            // the region before the vertex needs to be checked.
+            // this was already checked by the t > 0.0 block above.
+            if(t < 1.0){
+                double afterT = std::max(1.0, t+SAMPLE_DELTA);
+
+                Point after = pointAtSegmentParameter(a, b, afterT);
+
+                if(pointStrictlyInsidePolygon(after, obstacle)) return false;
+            }
+
+        }
+    }
+    return true;
+}
+
+double segmentParameter( // tells us where a point lies
+    const Point& a,
+    const Point& b,
+    const Point& point
+){
+    // B-A
+    double dx = (b.x - a.x);
+    double dy = (b.y - a.y);
+    if(std::abs(dx) >= std::abs(dy)){ // use x coordinate
+        return (point.x - a.x)/dx;
+    }
+    // use y coordinate
+    return (point.y - a.y)/dy;
+}
+
+Point pointAtSegmentParameter( // reconstructs a point from t
+    const Point& a,
+    const Point& b,
+    double t
+){
+    return {
+        a.x + t*(b.x - a.x), 
+        a.y + t*(b.y - a.y)
+    };
+}

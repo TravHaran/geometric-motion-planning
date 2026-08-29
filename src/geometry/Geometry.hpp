@@ -19,6 +19,11 @@ bool onSegment(
     const Point& p
 );
 
+bool segmentsProperlyIntersect(
+    const Segment& s1,
+    const Segment& s2
+);
+
 bool segmentsIntersect(
     const Segment& s1,
     const Segment& s2
@@ -33,6 +38,16 @@ bool pointInPolygon(
     const Polygon& polygon
 );
 
+bool pointOnPolygonBoundary(
+    const Point& point,
+    const Polygon& polygon
+);
+
+bool pointStrictlyInsidePolygon(
+    const Point& point,
+    const Polygon& polygon
+);
+
 bool isSegmentCollisionFree(
     const Segment& segment,
     const std::vector<Polygon>& obstacles
@@ -41,4 +56,22 @@ bool isSegmentCollisionFree(
 bool isPathCollisionFree(
     const Path& path,
     const std::vector<Polygon>& obstacles
+);
+
+bool isVisible(
+    const Point& a,
+    const Point& b,
+    const std::vector<Polygon>& obstacles
+);
+
+double segmentParameter(
+    const Point& a,
+    const Point& b,
+    const Point& point
+);
+
+Point pointAtSegmentParameter(
+    const Point& a,
+    const Point& b,
+    double t
 );

@@ -62,6 +62,41 @@ For collision detection, this project treats points lying on the polygon
 boundary as inside the obstacle. Therefore, before updating the winding
 number, each edge is checked using the point-on-segment predicate.
 
+\subsection{Boundary and Strict Interior}
+
+The Phase 1 point-in-polygon predicate treats a point on the polygon
+boundary as inside the polygon. This convention is useful for collision
+checking because touching an obstacle is considered a collision.
+
+Visibility testing requires a finer distinction. A point may be:
+
+\begin{itemize}
+    \item strictly inside the polygon;
+    \item on the polygon boundary; or
+    \item outside the polygon.
+\end{itemize}
+
+We therefore distinguish between the existing point-in-polygon relation and
+strict interior membership.
+
+A point $p$ is strictly inside a polygon $P$ when
+
+\[
+p \in \operatorname{Interior}(P).
+\]
+
+A point lying on an edge or vertex belongs to the boundary,
+
+\[
+p \in \partial P,
+\]
+
+and is therefore not considered strictly inside.
+
+This distinction will become important when constructing visibility graphs,
+because a visibility segment may terminate at or travel along an obstacle
+boundary without entering the obstacle interior.
+
 \subsection{Complexity}
 
 Each polygon edge is examined exactly once. For a polygon containing $n$

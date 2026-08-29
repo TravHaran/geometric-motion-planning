@@ -1,5 +1,6 @@
 #include <cassert>
 #include <iostream>
+#include <cmath>
 
 #include "geometry/Geometry.hpp"
 
@@ -307,8 +308,281 @@ void testInvalidPolygonEdges()
     assert(polygonEdges(twoPoints).empty());
 }
 
+void testPointOnPolygonBoundary()
+{
+    Polygon rectangle{{
+        {0.0, 0.0},
+        {4.0, 0.0},
+        {4.0, 3.0},
+        {0.0, 3.0}
+    }};
+
+    assert(pointOnPolygonBoundary( //edge
+        {2.0, 0.0},
+        rectangle
+    ));
+
+    assert(pointOnPolygonBoundary( //vertex
+        {0.0, 0.0},
+        rectangle
+    ));
+
+    assert(!pointOnPolygonBoundary( //interior
+        {2.0, 1.0},
+        rectangle
+    ));
+
+    assert(!pointOnPolygonBoundary( //outside
+        {5.0, 1.0},
+        rectangle
+    ));
+}
+
+void testPointStrictlyInsidePolygon()
+{
+    Polygon rectangle{{
+        {0.0, 0.0},
+        {4.0, 0.0},
+        {4.0, 3.0},
+        {0.0, 3.0}
+    }};
+
+    assert(pointStrictlyInsidePolygon( //interior
+        {2.0, 1.0},
+        rectangle
+    ));
+
+    assert(!pointStrictlyInsidePolygon( //edge
+        {2.0, 0.0},
+        rectangle
+    ));
+
+    assert(!pointStrictlyInsidePolygon( //vertex
+        {0.0, 0.0},
+        rectangle
+    ));
+
+    assert(!pointStrictlyInsidePolygon( //outside
+        {5.0, 1.0},
+        rectangle
+    ));
+}
+
+void testSegmentsProperlyIntersect()
+{
+    Segment crossing1{
+        {0.0, 0.0},
+        {4.0, 4.0}
+    };
+
+    Segment crossing2{
+        {0.0, 4.0},
+        {4.0, 0.0}
+    };
+
+    assert(segmentsProperlyIntersect(
+        crossing1,
+        crossing2
+    ));
+
+    Segment touching1{
+        {0.0, 0.0},
+        {2.0, 2.0}
+    };
+
+    Segment touching2{
+        {2.0, 2.0},
+        {4.0, 0.0}
+    };
+
+    assert(!segmentsProperlyIntersect(
+        touching1,
+        touching2
+    ));
+
+    Segment overlap1{
+        {0.0, 0.0},
+        {4.0, 0.0}
+    };
+
+    Segment overlap2{
+        {2.0, 0.0},
+        {6.0, 0.0}
+    };
+
+    assert(!segmentsProperlyIntersect(
+        overlap1,
+        overlap2
+    ));
+
+    assert(segmentsIntersect(
+        touching1,
+        touching2
+    ));
+
+    assert(segmentsIntersect(
+        overlap1,
+        overlap2
+    ));
+}
+
+void testIsVisible()
+{
+    Polygon rectangle{{
+        {2.0, 1.0},
+        {6.0, 1.0},
+        {6.0, 4.0},
+        {2.0, 4.0}
+    }};
+
+    std::vector<Polygon> obstacles{
+        rectangle
+    };
+
+    // Completely outside the obstacle.
+    assert(isVisible(
+        {0.0, 0.0},
+        {1.0, 0.0},
+        obstacles
+    ));
+
+    // Terminates at an obstacle vertex.
+    assert(isVisible(
+        {0.0, 1.0},
+        {2.0, 1.0},
+        obstacles
+    ));
+
+    // Travels along an obstacle boundary.
+    assert(isVisible(
+        {2.0, 1.0},
+        {6.0, 1.0},
+        obstacles
+    ));
+
+    // Diagonal through obstacle interior.
+    assert(!isVisible(
+        {2.0, 1.0},
+        {6.0, 4.0},
+        obstacles
+    ));
+
+    // Properly crosses the obstacle.
+    assert(!isVisible(
+        {0.0, 2.0},
+        {8.0, 2.0},
+        obstacles
+    ));
+
+    // Endpoint strictly inside obstacle.
+    assert(!isVisible(
+        {3.0, 2.0},
+        {8.0, 2.0},
+        obstacles
+    ));
+
+    // Starts at a vertex and immediately enters obstacle interior.
+    assert(!isVisible(
+        {2.0, 1.0},
+        {4.0, 2.0},
+        obstacles
+    ));
+}
+
+void testSegmentParameter()
+{
+    // Diagonal segment
+    Point a{2.0, 3.0};
+    Point b{10.0, 7.0};
+    Point v{4.0, 4.0};
+
+    assert(
+        std::abs(segmentParameter(a, b, v) - 0.25)
+        < 1e-9
+    );
+
+    // Vertical segment: must use y-coordinate
+    Point verticalA{2.0, 3.0};
+    Point verticalB{2.0, 10.0};
+    Point verticalV{2.0, 5.0};
+
+    assert(
+        std::abs(
+            segmentParameter(
+                verticalA,
+                verticalB,
+                verticalV
+            ) - (2.0 / 7.0)
+        ) < 1e-9
+    );
+
+    // Horizontal segment: uses x-coordinate
+    Point horizontalA{2.0, 5.0};
+    Point horizontalB{6.0, 5.0};
+    Point horizontalV{5.0, 5.0};
+
+    assert(
+        std::abs(
+            segmentParameter(
+                horizontalA,
+                horizontalB,
+                horizontalV
+            ) - 0.75
+        ) < 1e-9
+    );
+
+    // Point at the end of the segment
+    assert(
+        std::abs(
+            segmentParameter(a, b, b) - 1.0
+        ) < 1e-9
+    );
+
+    // Point on the same line, but before A.
+    // This demonstrates that the function calculates t;
+    // it does not validate segment membership.
+    Point beforeA{-2.0, 1.0};
+
+    assert(
+        std::abs(
+            segmentParameter(a, b, beforeA) - (-0.5)
+        ) < 1e-9
+    );
+}
+
+void testPointAtSegmentParameter()
+{
+    Point a{2.0, 3.0};
+    Point b{10.0, 7.0};
+
+    Point midpoint =
+        pointAtSegmentParameter(a, b, 0.5);
+
+    assert(std::abs(midpoint.x - 6.0) < 1e-9);
+    assert(std::abs(midpoint.y - 5.0) < 1e-9);
+
+    Point quarter =
+        pointAtSegmentParameter(a, b, 0.25);
+
+    assert(std::abs(quarter.x - 4.0) < 1e-9);
+    assert(std::abs(quarter.y - 4.0) < 1e-9);
+
+    Point start =
+        pointAtSegmentParameter(a, b, 0.0);
+
+    assert(std::abs(start.x - a.x) < 1e-9);
+    assert(std::abs(start.y - a.y) < 1e-9);
+
+    Point end =
+        pointAtSegmentParameter(a, b, 1.0);
+
+    assert(std::abs(end.x - b.x) < 1e-9);
+    assert(std::abs(end.y - b.y) < 1e-9);
+}
+
 
 int main() {
+    //phase 1
     testOrientation();
     test_onSegment();
     testSegmentIntersect();
@@ -320,6 +594,14 @@ int main() {
     testMultipleObstacles();
     testIsPathCollisionFree();
     testInvalidPolygonEdges();
+
+    //phase 2
+    testPointOnPolygonBoundary();
+    testPointStrictlyInsidePolygon();
+    testSegmentsProperlyIntersect();
+    testIsVisible();
+    testSegmentParameter();
+    testPointAtSegmentParameter();
     std::cout << "All geometry tests passed!\n";
 
     return 0;

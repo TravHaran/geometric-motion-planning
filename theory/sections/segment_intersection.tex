@@ -4,26 +4,60 @@ Given two line segments $\overline{AB}$ and $\overline{CD}$, we want to
 determine whether they intersect. This operation is fundamental to collision
 detection, polygon validation, visibility testing, and motion planning.
 
-\subsection{Proper Intersection}
+\subsection{Proper Intersections}
 
-Compute
-\begin{align*}
-o_1 &= \operatorname{orientation}(A,B,C), &
-o_2 &= \operatorname{orientation}(A,B,D),\\
-o_3 &= \operatorname{orientation}(C,D,A), &
-o_4 &= \operatorname{orientation}(C,D,B).
-\end{align*}
+A proper intersection occurs when two line segments cross through the
+interiors of both segments.
 
-For a proper crossing, $C$ and $D$ must lie on opposite sides of the line
-through $AB$, while $A$ and $B$ must lie on opposite sides of the line
-through $CD$. Thus
+Let the two segments be
+
 \[
-o_1o_2<0 \qquad \text{and} \qquad o_3o_4<0.
+\overline{AB}
+\qquad\text{and}\qquad
+\overline{CD}.
 \]
-Equivalently,
+
+Define
+
 \[
-(o_1o_2<0)\land(o_3o_4<0).
+o_1 = \operatorname{orientation}(A,B,C),
 \]
+
+\[
+o_2 = \operatorname{orientation}(A,B,D),
+\]
+
+\[
+o_3 = \operatorname{orientation}(C,D,A),
+\]
+
+and
+
+\[
+o_4 = \operatorname{orientation}(C,D,B).
+\]
+
+The segments properly intersect when the endpoints of each segment lie on
+opposite sides of the other segment:
+
+\[
+o_1 o_2 < 0
+\]
+
+and
+
+\[
+o_3 o_4 < 0.
+\]
+
+A proper intersection therefore excludes endpoint touching and collinear
+overlap. These cases may still count as general segment intersections, but
+they are geometrically different from a crossing through both segment
+interiors.
+
+This distinction is useful for visibility testing. A candidate visibility
+edge should be rejected when it properly crosses an obstacle boundary, while
+some forms of boundary touching must remain allowed.
 
 \subsection{Degenerate Cases}
 

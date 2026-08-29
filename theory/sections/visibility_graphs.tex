@@ -1,0 +1,132 @@
+\section{Visibility Graphs}
+
+A visibility graph converts a continuous geometric planning problem into a
+discrete graph-search problem.
+
+For polygonal obstacles, the graph will eventually contain the start point,
+goal point, and obstacle vertices as nodes. Two nodes are connected when they
+are geometrically visible to one another.
+
+\subsection{Geometric Visibility}
+
+Two points $A$ and $B$ are considered visible when the open segment between
+them does not pass through the interior of any obstacle.
+
+For an obstacle $O$, this can be expressed as
+
+\[
+(A,B) \cap \operatorname{Interior}(O) = \varnothing.
+\]
+
+The use of the open segment $(A,B)$ is important. A visibility segment may
+terminate exactly at an obstacle vertex without entering the obstacle
+interior.
+
+Visibility therefore differs from the Phase 1 collision convention. In
+ordinary collision checking, touching an obstacle boundary counts as a
+collision. In visibility testing, touching or traveling along an obstacle
+boundary may be allowed as long as the segment does not enter the obstacle
+interior.
+
+\subsection{Proper Boundary Crossings}
+
+A candidate visibility segment is invalid if it properly intersects an
+obstacle edge. A proper intersection crosses through the interiors of both
+segments rather than merely touching at an endpoint.
+
+Proper-intersection testing detects ordinary crossings through an obstacle,
+but it is not sufficient by itself. A candidate segment can enter an obstacle
+through one of its vertices without producing a proper intersection.
+
+\subsection{Parametric Representation of a Segment}
+
+A point along the segment from $A$ to $B$ can be represented parametrically
+as
+
+\[
+P(t) = A + t(B-A),
+\qquad 0 \leq t \leq 1.
+\]
+
+The parameter $t$ describes the position along the segment:
+
+\[
+P(0)=A,
+\]
+
+\[
+P(1)=B,
+\]
+
+and
+
+\[
+P\left(\frac{1}{2}\right)
+=
+\frac{A+B}{2}.
+\]
+
+If a point $V$ is known to lie on the nonzero segment $\overline{AB}$, its
+parameter can be recovered from either coordinate. For example,
+
+\[
+t = \frac{V_x-A_x}{B_x-A_x}
+\]
+
+when the $x$ component is suitable for division.
+
+The implementation uses the coordinate with the larger absolute change
+between $A$ and $B$. This avoids division by zero for vertical or horizontal
+segments and reduces division by very small direction components.
+
+The helper that computes this parameter assumes that the point already lies
+on a nonzero segment. It does not perform segment-membership validation.
+
+\subsection{Visibility Near Obstacle Vertices}
+
+Proper-intersection testing alone cannot detect every invalid visibility
+segment. In particular, a segment may pass through an obstacle vertex and
+immediately enter the obstacle interior.
+
+Suppose an obstacle vertex $V$ lies on a candidate segment and has parameter
+$t_V$. Points immediately before and after the vertex can be sampled using
+
+\[
+P(t_V-\delta)
+\]
+
+and
+
+\[
+P(t_V+\delta),
+\]
+
+where $\delta$ is a small positive parameter displacement.
+
+If either valid neighboring sample lies strictly inside the obstacle, then the
+candidate segment enters the obstacle interior and is therefore not visible.
+
+The endpoint cases require special treatment. If
+
+\[
+t_V=0,
+\]
+
+then $V=A$, so no portion of the candidate segment exists before the vertex.
+Only the sample after the vertex needs to be considered. Similarly, if
+
+\[
+t_V=1,
+\]
+
+then $V=B$, so only the sample before the vertex needs to be considered.
+
+The sampled parameters are also clamped to the valid segment interval
+
+\[
+0 \leq t \leq 1.
+\]
+
+This ensures that visibility testing considers only the finite candidate
+segment rather than points on the infinite line extending beyond its
+endpoints.
