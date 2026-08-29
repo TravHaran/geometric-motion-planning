@@ -184,6 +184,50 @@ add_custom_command(
 )
 
 # ---------------------------------
+# demo 2d - interactive Dijkstra/A*
+# ---------------------------------
+
+add_executable(
+    demo_2d
+
+    demos/demo_2d_interactive_planner.cpp
+
+    src/geometry/Geometry.cpp
+
+    src/graph/VisibilityGraph.cpp
+
+    src/planners/Dijkstra.cpp
+    src/planners/AStar.cpp
+
+    src/visualization/Renderer.cpp
+    src/visualization/DemoPanel.cpp
+)
+
+target_include_directories(
+    demo_2d
+    PRIVATE
+    src
+)
+
+target_link_libraries(
+    demo_2d
+    PRIVATE
+    SFML::Graphics
+    SFML::Window
+    SFML::System
+)
+
+add_custom_command(
+    TARGET demo_2d
+    POST_BUILD
+
+    COMMAND
+        ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets
+        $<TARGET_FILE_DIR:demo_2d>/assets
+)
+
+# ---------------------------------
 # Geometry unit tests
 # ---------------------------------
 
