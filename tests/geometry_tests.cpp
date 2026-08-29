@@ -580,6 +580,66 @@ void testPointAtSegmentParameter()
     assert(std::abs(end.y - b.y) < 1e-9);
 }
 
+void testIsVisibleConcavePolygon()
+{
+    Polygon concave{{
+        {2.0, 1.0},
+        {6.0, 1.0},
+        {6.0, 3.0},
+        {4.0, 3.0},
+        {4.0, 5.0},
+        {2.0, 5.0}
+    }};
+
+    std::vector<Polygon> obstacles{
+        concave
+    };
+
+    // Completely outside the polygon.
+    assert(isVisible(
+        {0.0, 0.0},
+        {1.0, 0.0},
+        obstacles
+    ));
+
+    // Along a polygon boundary edge.
+    assert(isVisible(
+        {2.0, 1.0},
+        {6.0, 1.0},
+        obstacles
+    ));
+
+    // Starts at a polygon vertex and immediately enters the interior.
+    assert(!isVisible(
+        {2.0, 1.0},
+        {3.0, 2.0},
+        obstacles
+    ));
+
+    // Crosses through the obstacle.
+    assert(!isVisible(
+        {0.0, 2.0},
+        {8.0, 2.0},
+        obstacles
+    ));
+
+    // Passes exactly through the concave reflex vertex.
+    // The segment approaches the vertex from outside, then enters
+    // the obstacle interior after passing through the vertex.
+    assert(!isVisible(
+        {6.0, 5.0},
+        {2.0, 1.0},
+        obstacles
+    ));
+
+    // Approaches the reflex vertex entirely from outside and stops there.
+    assert(isVisible(
+        {6.0, 5.0},
+        {4.0, 3.0},
+        obstacles
+    ));
+}
+
 
 int main() {
     //phase 1
@@ -602,6 +662,7 @@ int main() {
     testIsVisible();
     testSegmentParameter();
     testPointAtSegmentParameter();
+    testIsVisibleConcavePolygon();
     std::cout << "All geometry tests passed!\n";
 
     return 0;
