@@ -91,6 +91,32 @@ target_link_libraries(
 )
 
 # ---------------------------------
+# demo 2a
+# ---------------------------------
+
+add_executable(
+    demo_2a
+    demos/demo_2a_visibility_graph.cpp
+    src/graph/VisibilityGraph.cpp
+    src/geometry/Geometry.cpp
+    src/visualization/Renderer.cpp
+)
+
+target_include_directories(
+    demo_2a
+    PRIVATE
+    src
+)
+
+target_link_libraries(
+    demo_2a
+    PRIVATE
+    SFML::Graphics
+    SFML::Window
+    SFML::System
+)
+
+# ---------------------------------
 # Geometry unit tests
 # ---------------------------------
 

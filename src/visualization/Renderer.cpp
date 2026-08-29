@@ -43,3 +43,26 @@ void drawSegment(
 
     window.draw(line, 2, sf::PrimitiveType::Lines);
 }
+
+void drawGraph(
+    sf::RenderWindow& window,
+    const Graph& graph,
+    const sf::Color& color
+){
+    for(const GraphEdge& edge : graph.edges){
+
+        const Point& a =
+            graph.nodes[edge.from].position;
+
+        const Point& b =
+            graph.nodes[edge.to].position;
+
+        Segment segment{a, b};
+
+        drawSegment(
+            window,
+            segment,
+            color
+        );
+    }
+}
