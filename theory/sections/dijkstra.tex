@@ -1,0 +1,89 @@
+\section{Shortest Paths with Dijkstra's Algorithm}
+
+Once the weighted visibility graph has been constructed, motion planning
+becomes a shortest-path problem on a graph.
+
+For each node $v$, Dijkstra's algorithm maintains a tentative distance
+
+\[
+d(v),
+\]
+
+representing the shortest currently known distance from the start node to
+$v$.
+
+Initially,
+
+\[
+d(S)=0,
+\]
+
+while every other node is assigned
+
+\[
+d(v)=\infty.
+\]
+
+The central operation in Dijkstra's algorithm is \emph{edge relaxation}.
+For an edge from $u$ to $v$ with weight $w(u,v)$, a new candidate distance
+to $v$ is
+
+\[
+d(u)+w(u,v).
+\]
+
+If
+
+\[
+d(u)+w(u,v)<d(v),
+\]
+
+then a shorter route to $v$ has been discovered, and we update
+
+\[
+d(v)=d(u)+w(u,v).
+\]
+
+The predecessor of $v$ is also recorded as $u$ so that the final shortest
+path can later be reconstructed.
+
+\subsection{Selecting the Next Node}
+
+After relaxing the edges of the current node, Dijkstra's algorithm selects
+the unvisited node with the smallest tentative distance.
+
+Once a node is selected in this way, its shortest-path distance is considered
+finalized.
+
+This property relies on all graph edge weights being non-negative. In the
+visibility graph, edge weights are Euclidean distances, so this condition is
+automatically satisfied.
+
+\subsection{Path Reconstruction}
+
+Whenever relaxation improves the tentative distance to a node $v$, the
+algorithm records the node $u$ from which that improvement came.
+
+This node is called the \emph{predecessor} or \emph{parent} of $v$.
+
+After the goal is reached, the shortest path is reconstructed by following
+the parent links backward:
+
+\[
+G \rightarrow \operatorname{parent}(G)
+\rightarrow \operatorname{parent}(\operatorname{parent}(G))
+\rightarrow \cdots \rightarrow S.
+\]
+
+Because this produces the path in reverse order, the resulting sequence is
+reversed to obtain the final path from start to goal.
+
+\subsection{Undirected Visibility Edges}
+
+The visibility graph is undirected: if node $u$ can see node $v$, then node
+$v$ can also see node $u$.
+
+For efficiency, each undirected edge is stored only once in the graph.
+
+Therefore, when processing a node, Dijkstra's algorithm must check whether
+the current node appears as either endpoint of an edge.

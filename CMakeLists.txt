@@ -236,3 +236,23 @@ target_include_directories(
     PRIVATE
     src
 )
+
+# ---------------------------------
+# AStar unit tests
+# ---------------------------------
+
+add_executable(
+    astar_tests
+
+    tests/astar_tests.cpp
+    src/planners/AStar.cpp
+    src/planners/Dijkstra.cpp
+    src/graph/VisibilityGraph.cpp
+    src/geometry/Geometry.cpp
+)
+
+target_include_directories(
+    astar_tests
+    PRIVATE
+    src
+)

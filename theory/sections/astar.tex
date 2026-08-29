@@ -1,0 +1,222 @@
+\section{A* Search}
+
+A* is a shortest-path search algorithm that extends Dijkstra's algorithm
+by incorporating an estimate of the remaining distance to the goal.
+
+For each node $n$, A* considers three quantities:
+
+\[
+g(n),
+\]
+
+the known cost of the shortest path discovered so far from the start node
+to $n$,
+
+\[
+h(n),
+\]
+
+a heuristic estimate of the remaining cost from $n$ to the goal, and
+
+\[
+f(n)=g(n)+h(n),
+\]
+
+the estimated total cost of a path from the start to the goal that passes
+through $n$.
+
+While Dijkstra's algorithm selects the next node using only $g(n)$, A*
+selects the node with the smallest value of $f(n)$.
+
+This allows A* to use information about the location of the goal when
+deciding which part of the graph to explore.
+
+\subsection{Euclidean-Distance Heuristic}
+
+The visibility graph is embedded in two-dimensional Euclidean space.
+Therefore, a natural heuristic is the straight-line distance from a node
+to the goal.
+
+For a node
+
+\[
+n=(x_n,y_n)
+\]
+
+and goal
+
+\[
+G=(x_G,y_G),
+\]
+
+the heuristic is
+
+\[
+h(n)
+=
+\sqrt{
+(x_G-x_n)^2
++
+(y_G-y_n)^2
+}.
+\]
+
+This gives the shortest possible geometric distance between the node and
+the goal without considering obstacles.
+
+\subsection{Admissibility}
+
+For A* to guarantee an optimal path, the heuristic should not overestimate
+the true remaining shortest-path cost.
+
+A heuristic satisfying
+
+\[
+h(n)\leq h^*(n)
+\]
+
+is called \emph{admissible}, where $h^*(n)$ denotes the true shortest-path
+cost from node $n$ to the goal.
+
+For the visibility graph, every edge weight is a Euclidean distance.
+Any path from $n$ to the goal therefore consists of one or more Euclidean
+line segments.
+
+By the triangle inequality,
+
+\[
+\|n-G\|
+\leq
+\|n-v_1\|
++
+\|v_1-v_2\|
++
+\cdots
++
+\|v_k-G\|.
+\]
+
+Therefore, the straight-line Euclidean distance to the goal can never
+exceed the length of a valid path through the visibility graph.
+
+Hence,
+
+\[
+h(n)=\|n-G\|
+\]
+
+is an admissible heuristic.
+
+\subsection{Consistency}
+
+A stronger property than admissibility is \emph{consistency}.
+
+A heuristic is consistent if, for every graph edge between nodes $u$ and
+$v$,
+
+\[
+h(u)
+\leq
+w(u,v)+h(v).
+\]
+
+For the Euclidean visibility graph,
+
+\[
+h(u)=\|u-G\|,
+\]
+
+\[
+w(u,v)=\|u-v\|,
+\]
+
+and
+
+\[
+h(v)=\|v-G\|.
+\]
+
+The triangle inequality gives
+
+\[
+\|u-G\|
+\leq
+\|u-v\|+\|v-G\|.
+\]
+
+Therefore, the Euclidean-distance heuristic is also consistent.
+
+With a consistent heuristic, once a node is selected for expansion using
+the smallest $f$-value, its best path cost does not need to be reconsidered
+under the standard A* formulation used in this project.
+
+\subsection{Relaxation in A*}
+
+Although A* selects nodes using
+
+\[
+f(n)=g(n)+h(n),
+\]
+
+edge relaxation still operates on the actual path cost $g(n)$.
+
+For an edge from $u$ to $v$, the candidate path cost is
+
+\[
+g_{\text{candidate}}
+=
+g(u)+w(u,v).
+\]
+
+If
+
+\[
+g_{\text{candidate}}<g(v),
+\]
+
+then
+
+\[
+g(v)=g_{\text{candidate}},
+\]
+
+and the parent of $v$ is updated to $u$.
+
+The heuristic does not change the actual cost of a path. It only influences
+which node A* chooses to explore next.
+
+\subsection{Relationship to Dijkstra's Algorithm}
+
+Dijkstra's algorithm can be viewed as a special case of A* in which
+
+\[
+h(n)=0
+\]
+
+for every node.
+
+In that case,
+
+\[
+f(n)
+=
+g(n)+0
+=
+g(n),
+\]
+
+so A* selects nodes using exactly the same criterion as Dijkstra's
+algorithm.
+
+Therefore,
+
+\[
+\boxed{
+\text{Dijkstra}
+=
+\text{A* with } h(n)=0
+}
+\]
+
+This relationship makes the two algorithms particularly useful to compare
+within the same visibility graph.
