@@ -116,6 +116,35 @@ target_link_libraries(
     SFML::System
 )
 
+
+# ---------------------------------
+# demo 2b
+# ---------------------------------
+
+add_executable(
+    demo_2b
+
+    demos/demo_2b_dijkstra.cpp
+    src/graph/VisibilityGraph.cpp
+    src/geometry/Geometry.cpp
+    src/visualization/Renderer.cpp
+    src/planners/Dijkstra.cpp
+)
+
+target_include_directories(
+    demo_2b
+    PRIVATE
+    src
+)
+
+target_link_libraries(
+    demo_2b
+    PRIVATE
+    SFML::Graphics
+    SFML::Window
+    SFML::System
+)
+
 # ---------------------------------
 # Geometry unit tests
 # ---------------------------------
@@ -147,6 +176,25 @@ add_executable(
 
 target_include_directories(
     graph_tests
+    PRIVATE
+    src
+)
+
+# ---------------------------------
+# Dijkstra unit tests
+# ---------------------------------
+
+add_executable(
+    dijkstra_tests
+
+    tests/dijkstra_tests.cpp
+    src/planners/Dijkstra.cpp
+    src/graph/VisibilityGraph.cpp
+    src/geometry/Geometry.cpp
+)
+
+target_include_directories(
+    dijkstra_tests
     PRIVATE
     src
 )

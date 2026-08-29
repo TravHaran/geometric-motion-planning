@@ -16,3 +16,4 @@ cmake --build .
 
 ./geometry_tests
 ./graph_tests
+./dijkstra_tests
