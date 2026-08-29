@@ -66,6 +66,12 @@ DijkstraResult dijkstra(
     std::size_t startNode,
     std::size_t goalNode
 ){
+    std::size_t expandedNodes = 0;
+    /**
+     * A node is expanded when the algorithm selects it 
+     * and is about to examine its outgoing edges.
+     */
+
     const std::size_t nodeCount =
         graph.nodes.size();
 
@@ -144,6 +150,8 @@ DijkstraResult dijkstra(
         // The shortest distance to this node is now final.
         visited[currentNode] = true;
 
+        ++expandedNodes;
+
 
         /*
          * Examine every edge connected to currentNode.
@@ -221,7 +229,8 @@ DijkstraResult dijkstra(
     ){
         return {
             std::numeric_limits<double>::infinity(),
-            path
+            {},
+            expandedNodes
         };
     }
 
@@ -262,6 +271,7 @@ DijkstraResult dijkstra(
 
     return {
         distances[goalNode],
-        path
+        path,
+        expandedNodes
     };
 }

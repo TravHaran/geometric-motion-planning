@@ -56,6 +56,10 @@ void testAStarShortestPath(){
             1
         })
     );
+
+    assert(
+        result.expandedNodes > 0
+    );
 }
 
 void testAStarUnreachableGoal(){
@@ -88,6 +92,10 @@ void testAStarUnreachableGoal(){
     assert(
         result.path.empty()
     );
+
+    assert(
+        result.expandedNodes > 0
+    );
 }
 
 void testAStarStartEqualsGoal(){
@@ -118,6 +126,12 @@ void testAStarStartEqualsGoal(){
             0
         })
     );
+
+    // The goal is selected immediately,
+    // so its outgoing edges are never expanded.
+    assert(
+        result.expandedNodes == 0
+    );
 }
 
 void testAStarUndirectedEdge(){
@@ -129,7 +143,7 @@ void testAStarUndirectedEdge(){
         {{2.5, 0.0}}
     };
 
-    // Deliberately stored backward.
+    // Deliberately store the edge backward.
     graph.edges = {
         {1, 0, 2.5}
     };
@@ -154,6 +168,10 @@ void testAStarUndirectedEdge(){
             0,
             1
         })
+    );
+
+    assert(
+        result.expandedNodes > 0
     );
 }
 
@@ -203,6 +221,8 @@ void testAStarMatchesDijkstra(){
             1
         );
 
+    // Both algorithms should find the same
+    // optimal shortest-path distance.
     assert(
         approximatelyEqual(
             aStarResult.distance,
@@ -213,6 +233,82 @@ void testAStarMatchesDijkstra(){
     assert(
         !aStarResult.path.empty()
     );
+
+    assert(
+        aStarResult.path.front() == 0
+    );
+
+    assert(
+        aStarResult.path.back() == 1
+    );
+
+    assert(
+        aStarResult.expandedNodes > 0
+    );
+
+    assert(
+        dijkstraResult.expandedNodes > 0
+    );
+}
+
+void testAStarExpandsFewerNodesThanDijkstra(){
+
+    Graph graph;
+
+    graph.nodes = {
+        {{0.0, 0.0}},   // 0: start
+        {{10.0, 0.0}},  // 1: goal
+        {{5.0, 0.0}},   // 2: useful intermediate node
+        {{0.0, 1.0}},   // 3: distractor
+        {{0.0, 2.0}},   // 4: distractor
+        {{0.0, 3.0}}    // 5: distractor
+    };
+
+    graph.edges = {
+        {0, 2, 5.0},
+        {2, 1, 5.0},
+
+        {0, 3, 1.0},
+        {3, 4, 1.0},
+        {4, 5, 1.0}
+    };
+
+    DijkstraResult dijkstraResult =
+        dijkstra(
+            graph,
+            0,
+            1
+        );
+
+    AStarResult aStarResult =
+        aStar(
+            graph,
+            0,
+            1
+        );
+
+    // Both algorithms must still find
+    // the same optimal path cost.
+    assert(
+        approximatelyEqual(
+            aStarResult.distance,
+            dijkstraResult.distance
+        )
+    );
+
+    assert(
+        approximatelyEqual(
+            aStarResult.distance,
+            10.0
+        )
+    );
+
+    // A* should avoid expanding the
+    // irrelevant branch.
+    assert(
+        aStarResult.expandedNodes <
+        dijkstraResult.expandedNodes
+    );
 }
 
 int main(){
@@ -222,6 +318,7 @@ int main(){
     testAStarStartEqualsGoal();
     testAStarUndirectedEdge();
     testAStarMatchesDijkstra();
+    testAStarExpandsFewerNodesThanDijkstra();
 
     std::cout
         << "All A* tests passed.\n";

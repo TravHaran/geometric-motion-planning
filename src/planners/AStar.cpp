@@ -69,6 +69,8 @@ AStarResult aStar(
     std::size_t startNode,
     std::size_t goalNode
 ){
+    std::size_t expandedNodes = 0;
+
     const std::size_t nodeCount =
         graph.nodes.size();
 
@@ -115,6 +117,8 @@ AStarResult aStar(
 
         visited[currentNode] =
             true;
+        
+        ++expandedNodes;
 
         // Relax all edges connected to currentNode.
         for(const GraphEdge& edge : graph.edges){
@@ -173,7 +177,8 @@ AStarResult aStar(
     ){
         return {
             std::numeric_limits<double>::infinity(),
-            path
+            {},
+            expandedNodes
         };
     }
 
@@ -205,6 +210,7 @@ AStarResult aStar(
 
     return {
         distances[goalNode],
-        path
+        path,
+        expandedNodes
     };
 }
