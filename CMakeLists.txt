@@ -146,6 +146,44 @@ target_link_libraries(
 )
 
 # ---------------------------------
+# demo 2c
+# ---------------------------------
+
+add_executable(
+    demo_2c
+
+    demos/demo_2c_interactive_planner.cpp
+    src/geometry/Geometry.cpp
+    src/visualization/Renderer.cpp
+    src/graph/VisibilityGraph.cpp
+    src/planners/Dijkstra.cpp
+    src/visualization/DemoPanel.cpp
+)
+
+target_include_directories(
+    demo_2c
+    PRIVATE
+    src
+)
+
+target_link_libraries(
+    demo_2c
+    PRIVATE
+    SFML::Graphics
+    SFML::Window
+    SFML::System
+)
+
+add_custom_command(
+    TARGET demo_2c
+    POST_BUILD
+
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/assets"
+        "$<TARGET_FILE_DIR:demo_2c>/assets"
+)
+
+# ---------------------------------
 # Geometry unit tests
 # ---------------------------------
 

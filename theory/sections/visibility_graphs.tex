@@ -298,3 +298,30 @@ For efficiency, each undirected edge is stored only once in the graph.
 
 Therefore, when processing a node, Dijkstra's algorithm must check whether
 the current node appears as either endpoint of an edge.
+
+\subsection{Planning-Time Decomposition}
+
+The total planning process consists of two conceptually separate stages:
+
+\begin{enumerate}
+    \item constructing the visibility graph,
+    \item searching the resulting graph for a shortest path.
+\end{enumerate}
+
+Therefore, the total planning time can be decomposed as
+
+\[
+T_{\text{total}}
+=
+T_{\text{graph}}
++
+T_{\text{search}}.
+\]
+
+This distinction is useful when comparing graph-search algorithms. For
+example, Dijkstra's algorithm and A* may operate on the same visibility
+graph, meaning that the graph-construction cost is shared between them.
+
+Measuring the two stages separately therefore allows the performance of
+the search algorithms themselves to be compared without conflating their
+runtime with the cost of geometric visibility testing.
