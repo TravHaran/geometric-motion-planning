@@ -15,3 +15,4 @@ fi
 cmake --build .
 
 ./geometry_tests
+./graph_tests

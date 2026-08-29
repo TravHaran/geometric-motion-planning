@@ -130,3 +130,81 @@ The sampled parameters are also clamped to the valid segment interval
 This ensures that visibility testing considers only the finite candidate
 segment rather than points on the infinite line extending beyond its
 endpoints.
+
+\subsection{Visibility Graph Construction}
+
+Given a start point $S$, a goal point $G$, and a collection of polygonal
+obstacles, the visibility graph is represented as
+
+\[
+\mathcal{G} = (V,E).
+\]
+
+The node set contains the start point, goal point, and every obstacle vertex:
+
+\[
+V =
+\{S,G\}
+\cup
+\bigcup_{O \in \mathcal{O}}
+\operatorname{Vertices}(O).
+\]
+
+In the current implementation, the start point is stored as node $0$, the
+goal point as node $1$, and obstacle vertices are appended afterward.
+
+To construct the edge set, every unique pair of nodes $(v_i,v_j)$ with
+
+\[
+i < j
+\]
+
+is tested for geometric visibility. If the two nodes are visible, an
+undirected edge is added between them.
+
+Thus,
+
+\[
+E =
+\left\{
+(v_i,v_j)
+\mid
+i < j
+\text{ and }
+\operatorname{Visible}(v_i,v_j)
+\right\}.
+\]
+
+Using $i<j$ ensures that each unordered pair is considered exactly once. It
+also prevents self-edges such as $(v_i,v_i)$.
+
+\subsection{Euclidean Edge Weights}
+
+Each visibility edge is assigned a weight equal to the Euclidean distance
+between its endpoints.
+
+For points
+
+\[
+A=(x_A,y_A)
+\qquad\text{and}\qquad
+B=(x_B,y_B),
+\]
+
+the edge weight is
+
+\[
+w(A,B)
+=
+\sqrt{
+(x_B-x_A)^2
++
+(y_B-y_A)^2
+}.
+\]
+
+These weights represent the geometric length of traveling directly between
+two visible nodes.
+
+The resulting weighted graph can later be searched using shortest-path
+algorithms such as Dijkstra's algorithm or A*.

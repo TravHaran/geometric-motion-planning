@@ -106,3 +106,21 @@ target_include_directories(
     PRIVATE
     src
 )
+
+# ---------------------------------
+# Graph unit tests
+# ---------------------------------
+
+add_executable(
+    graph_tests
+
+    tests/graph_tests.cpp
+    src/graph/VisibilityGraph.cpp
+    src/geometry/Geometry.cpp
+)
+
+target_include_directories(
+    graph_tests
+    PRIVATE
+    src
+)
