@@ -228,6 +228,32 @@ add_custom_command(
 )
 
 # ---------------------------------
+# demo 2e - PATHLAB
+# ---------------------------------
+
+add_executable(
+    demo_2e
+
+    demos/demo_2e_pathlab.cpp
+
+    src/app/PathlabApp.cpp
+)
+
+target_include_directories(
+    demo_2e
+    PRIVATE
+    src
+)
+
+target_link_libraries(
+    demo_2e
+    PRIVATE
+    SFML::Graphics
+    SFML::Window
+    SFML::System
+)
+
+# ---------------------------------
 # Geometry unit tests
 # ---------------------------------
 

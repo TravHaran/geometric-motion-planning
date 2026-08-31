@@ -24,3 +24,5 @@ build/
 
 # Generated theory PDF
 theory/theory.pdf
+
+AGENTS.md
