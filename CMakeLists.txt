@@ -237,6 +237,16 @@ add_executable(
     demos/demo_2e_pathlab.cpp
 
     src/app/PathlabApp.cpp
+
+    src/geometry/Geometry.cpp
+
+    src/graph/VisibilityGraph.cpp
+
+    src/planners/Dijkstra.cpp
+
+    src/visualization/Renderer.cpp
+
+    src/ui/PathlabUI.cpp
 )
 
 target_include_directories(

@@ -1,0 +1,38 @@
+#pragma once
+
+#include <SFML/Graphics.hpp>
+
+#include <string>
+
+constexpr float PATHLAB_TOP_BAR_HEIGHT = 64.0f;
+constexpr float PATHLAB_BOTTOM_BAR_HEIGHT = 48.0f;
+constexpr float PATHLAB_SIDE_PANEL_WIDTH = 300.0f;
+
+struct PathlabUIData{
+    std::string algorithm;
+    std::string plannerStatus;
+
+    std::size_t obstacleCount = 0;
+    std::size_t graphNodeCount = 0;
+    std::size_t graphEdgeCount = 0;
+
+    double pathLength = 0.0;
+    std::size_t pathSegments = 0;
+    std::size_t pathNodes = 0;
+
+    double graphBuildTimeMs = 0.0;
+    double searchTimeMs = 0.0;
+    double totalTimeMs = 0.0;
+
+    bool showObstacles = true;
+    bool showVisibilityGraph = true;
+    bool showFinalPath = true;
+};
+
+bool loadPathlabFont(sf::Font& font);
+
+void drawPathlabUI(
+    sf::RenderWindow& window, 
+    const sf::Font& font, 
+    const PathlabUIData& data
+);
