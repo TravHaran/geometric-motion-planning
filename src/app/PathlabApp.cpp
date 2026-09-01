@@ -6,6 +6,7 @@
 #include <optional>
 #include <chrono>
 #include <cmath>
+#include <algorithm>
 
 namespace{
 
@@ -215,6 +216,8 @@ PathlabApp::PathlabApp() : window(
 
     rebuildCanvasRenderCache();
 
+    updatePlaybackInterval();
+
     if(!loadPathlabFont(uiFont)) window.close();
 }
 
@@ -231,8 +234,25 @@ void PathlabApp::run(){
 }
 
 void PathlabApp::processEvents(){
-    // PATHLAB has no animation, so wait instead of continuously redrawing
-    // an unchanged scene. The frame cap still protects against event floods.
+    // Outside active playback, wait instead of continuously redrawing an
+    // unchanged scene. The frame cap still protects playback and event bursts.
+
+    if(playbackPlaying){
+
+        while(
+            const std::optional event =
+                window.pollEvent()
+        ){
+            processEvent(
+                *event
+            );
+        }
+
+        updatePlayback();
+
+        return;
+    }
+
     if(const std::optional event = window.waitEvent()){
         processEvent(*event);
     }
@@ -322,7 +342,7 @@ void PathlabApp::handleMousePressed(
                 !showFinalPath;
 
             return;
-        
+
 
         case PathlabUIAction::ToggleExploredNodes:
 
@@ -386,6 +406,75 @@ void PathlabApp::handleMousePressed(
 
             return;
 
+        case PathlabUIAction::StepPlayback:
+
+            playbackActive = true;
+            playbackPlaying = false;
+
+            if(playbackIndex <
+            result.expandedNodeOrder.size()){
+
+                ++playbackIndex;
+
+                rebuildExploredNodeRenderCache();
+            }
+
+            rebuildPlaybackHighlightCache();
+
+            return;
+
+        case PathlabUIAction::ResetPlayback:
+
+            playbackActive = true;
+
+            playbackPlaying =
+                false;
+
+            playbackIndex = 0;
+
+            rebuildExploredNodeRenderCache();
+            rebuildPlaybackHighlightCache();
+
+            return;
+
+        case PathlabUIAction::TogglePlayback:
+
+            playbackActive = true;
+
+            if(playbackIndex >=
+            result.expandedNodeOrder.size()){
+
+                playbackIndex = 0;
+
+                rebuildExploredNodeRenderCache();
+            }
+
+            rebuildPlaybackHighlightCache();
+
+
+            playbackPlaying =
+                !playbackPlaying;
+
+
+            if(playbackPlaying){
+
+                playbackClock.restart();
+            }
+
+            return;
+
+        case PathlabUIAction::CyclePlaybackSpeed:
+
+            playbackSpeedIndex =
+                (playbackSpeedIndex + 1) % 5;
+
+            updatePlaybackInterval();
+
+            if(playbackPlaying){
+                playbackClock.restart();
+            }
+
+            return;
 
         case PathlabUIAction::None:
 
@@ -492,6 +581,8 @@ void PathlabApp::render(){
 
     drawExploredNodes();
 
+    drawPlaybackHighlights();
+
     drawPath();
 
     drawCurrentObstacle();
@@ -585,8 +676,28 @@ void PathlabApp::drawExploredNodes(){
     );
 }
 
+void PathlabApp::drawPlaybackHighlights(){
+    if(!planningResultAvailable || !playbackActive){
+        return;
+    }
+
+    if(showExploredNodes){
+        window.draw(currentExpandedNodeVertices);
+    }
+
+    window.draw(goalReachedVertices);
+}
+
 void PathlabApp::drawPath(){
     if(!planningResultAvailable || !showFinalPath) return;
+
+    if(
+        playbackActive
+        &&
+        playbackIndex < result.expandedNodeOrder.size()
+    ){
+        return;
+    }
 
     window.draw(pathVertices);
     window.draw(pathMarkerVertices);
@@ -655,7 +766,14 @@ void PathlabApp::runPlanner(){
         searchEnd - searchStart
     ).count();
 
+    playbackPlaying = false;
+
+    playbackActive = false;
+
+    playbackIndex = result.expandedNodeOrder.size();
+
     planningResultAvailable = true;
+
     rebuildPlanningRenderCache();
 }
 
@@ -665,6 +783,11 @@ void PathlabApp::invalidatePlanningResult(){
 
     result.path.clear();
     result.expandedNodeOrder.clear();
+
+    playbackIndex = 0;
+    playbackActive = false;
+    playbackPlaying = false;
+
     result.distance = 0.0;
     result.expandedNodes = 0;
 
@@ -672,6 +795,8 @@ void PathlabApp::invalidatePlanningResult(){
     visibilityNodeVertices.clear();
 
     exploredNodeVertices.clear();
+    currentExpandedNodeVertices.clear();
+    goalReachedVertices.clear();
 
     pathVertices.clear();
     pathMarkerVertices.clear();
@@ -680,6 +805,7 @@ void PathlabApp::invalidatePlanningResult(){
     searchTimeMs = 0.0;
 
     planningResultAvailable = false;
+
 }
 
 bool PathlabApp::isInsideCanvas(const sf::Vector2i& position) const {
@@ -743,6 +869,36 @@ PathlabUIData PathlabApp::buildUIData() const
         planningResultAvailable
         &&
         !result.expandedNodeOrder.empty();
+    data.playbackIndex = playbackIndex;
+    data.playbackTotal = result.expandedNodeOrder.size();
+    data.playbackPlaying = playbackPlaying;
+
+    switch(playbackSpeedIndex){
+
+        case 0:
+            data.playbackSpeed = "0.25x";
+            break;
+
+        case 1:
+            data.playbackSpeed = "0.5x";
+            break;
+
+        case 2:
+            data.playbackSpeed = "1x";
+            break;
+
+        case 3:
+            data.playbackSpeed = "2x";
+            break;
+
+        case 4:
+            data.playbackSpeed = "4x";
+            break;
+
+        default:
+            data.playbackSpeed = "1x";
+            break;
+    }
 
     return data;
 }
@@ -854,23 +1010,6 @@ void PathlabApp::rebuildPlanningRenderCache(){
         appendFilledCircle(visibilityNodeVertices, node.position, 2.5f, nodeColor);
     }
 
-    const sf::Color exploredColor{
-        59,
-        130,
-        246
-    };
-
-    for(const std::size_t nodeIndex :
-        result.expandedNodeOrder){
-
-        appendFilledCircle(
-            exploredNodeVertices,
-            graph.nodes[nodeIndex].position,
-            5.0f,
-            exploredColor
-        );
-    }
-
     const sf::Color pathColor{250, 204, 21};
     for(std::size_t i = 0; i + 1 < result.path.size(); ++i){
         appendThickSegment(
@@ -890,5 +1029,171 @@ void PathlabApp::rebuildPlanningRenderCache(){
             3.0f,
             pathMarkerColor
         );
+    }
+
+    rebuildExploredNodeRenderCache();
+    rebuildPlaybackHighlightCache();
+}
+
+void PathlabApp::rebuildExploredNodeRenderCache(){
+
+    exploredNodeVertices.clear();
+
+
+    const sf::Color exploredColor{
+        59,
+        130,
+        246
+    };
+
+
+    const std::size_t visibleCount =
+        std::min(
+            playbackIndex,
+            result.expandedNodeOrder.size()
+        );
+
+
+    for(std::size_t i = 0;
+        i < visibleCount;
+        ++i){
+
+        const std::size_t nodeIndex =
+            result.expandedNodeOrder[i];
+
+
+        appendFilledCircle(
+            exploredNodeVertices,
+            graph.nodes[nodeIndex].position,
+            5.0f,
+            exploredColor
+        );
+    }
+}
+
+void PathlabApp::rebuildPlaybackHighlightCache(){
+    currentExpandedNodeVertices.clear();
+    goalReachedVertices.clear();
+
+    if(!planningResultAvailable || !playbackActive){
+        return;
+    }
+
+    const std::size_t expansionCount =
+        result.expandedNodeOrder.size();
+
+    if(playbackIndex >= expansionCount){
+        if(graph.nodes.size() > 1){
+            const Point& goalPosition = graph.nodes[1].position;
+
+            appendFilledCircle(
+                goalReachedVertices,
+                goalPosition,
+                20.0f,
+                sf::Color(248, 113, 113, 45)
+            );
+
+            appendFilledCircle(
+                goalReachedVertices,
+                goalPosition,
+                15.0f,
+                sf::Color(248, 113, 113, 85)
+            );
+        }
+
+        return;
+    }
+
+    if(playbackIndex == 0){
+        return;
+    }
+
+    const std::size_t currentNodeIndex =
+        result.expandedNodeOrder[playbackIndex - 1];
+
+    const Point& currentPosition =
+        graph.nodes[currentNodeIndex].position;
+
+    appendFilledCircle(
+        currentExpandedNodeVertices,
+        currentPosition,
+        15.0f,
+        sf::Color(34, 211, 238, 65)
+    );
+
+    appendFilledCircle(
+        currentExpandedNodeVertices,
+        currentPosition,
+        7.0f,
+        sf::Color(34, 211, 238)
+    );
+}
+
+void PathlabApp::updatePlayback(){
+
+    if(!playbackPlaying){
+        return;
+    }
+
+
+    if(
+        playbackClock.getElapsedTime()
+            .asSeconds()
+        <
+        playbackIntervalSeconds
+    ){
+        return;
+    }
+
+
+    playbackClock.restart();
+
+
+    if(playbackIndex <
+       result.expandedNodeOrder.size()){
+
+        ++playbackIndex;
+
+        rebuildExploredNodeRenderCache();
+        rebuildPlaybackHighlightCache();
+    }
+
+
+    if(playbackIndex >=
+       result.expandedNodeOrder.size()){
+
+        playbackPlaying =
+            false;
+    }
+}
+
+void PathlabApp::updatePlaybackInterval(){
+
+    switch(playbackSpeedIndex){
+
+        case 0:
+            playbackIntervalSeconds = 1.0f;
+            break;
+
+        case 1:
+            playbackIntervalSeconds = 0.5f;
+            break;
+
+        case 2:
+            playbackIntervalSeconds = 0.25f;
+            break;
+
+        case 3:
+            playbackIntervalSeconds = 0.125f;
+            break;
+
+        case 4:
+            playbackIntervalSeconds = 0.0625f;
+            break;
+
+        default:
+            playbackSpeedIndex = 2;
+            playbackIntervalSeconds = 0.25f;
+            break;
     }
 }

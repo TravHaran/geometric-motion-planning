@@ -89,6 +89,8 @@ class PathlabApp{
 
         void drawExploredNodes();
 
+        void drawPlaybackHighlights();
+
         void drawPath();
 
         void rebuildCanvasRenderCache();
@@ -96,6 +98,14 @@ class PathlabApp{
         void rebuildObstacleRenderCache();
 
         void rebuildPlanningRenderCache();
+
+        void rebuildExploredNodeRenderCache();
+
+        void rebuildPlaybackHighlightCache();
+
+        void updatePlayback();
+
+        void updatePlaybackInterval();
 
         // =====================================
         // Window / resources
@@ -117,6 +127,10 @@ class PathlabApp{
         sf::VertexArray visibilityNodeVertices{sf::PrimitiveType::Triangles};
 
         sf::VertexArray exploredNodeVertices{sf::PrimitiveType::Triangles};
+
+        sf::VertexArray currentExpandedNodeVertices{sf::PrimitiveType::Triangles};
+
+        sf::VertexArray goalReachedVertices{sf::PrimitiveType::Triangles};
 
         sf::VertexArray pathVertices{sf::PrimitiveType::Triangles};
 
@@ -164,4 +178,17 @@ class PathlabApp{
         double graphBuildTimeMs = 0.0;
 
         double searchTimeMs = 0.0;
+
+        std::size_t playbackIndex = 0;
+
+        bool playbackActive = false;
+
+        bool playbackPlaying = false;
+
+        sf::Clock playbackClock;
+
+        std::size_t playbackSpeedIndex = 2;
+
+        float playbackIntervalSeconds = 0.25f;
+
 };

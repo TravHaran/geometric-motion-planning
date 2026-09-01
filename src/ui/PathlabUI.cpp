@@ -205,6 +205,121 @@ sf::FloatRect getRunPlannerButtonBounds(const sf::Vector2u& windowSize){
     );
 }
 
+sf::FloatRect getPlaybackDockBounds(
+    const sf::Vector2u& windowSize
+){
+    const sf::FloatRect runBounds =
+        getRunPlannerButtonBounds(
+            windowSize
+        );
+
+
+    return sf::FloatRect(
+        sf::Vector2f(
+            runBounds.position.x,
+            runBounds.position.y - 48.0f
+        ),
+        sf::Vector2f(
+            runBounds.size.x,
+            38.0f
+        )
+    );
+}
+
+sf::FloatRect getPlaybackResetBounds(
+    const sf::Vector2u& windowSize
+){
+    const sf::FloatRect dock =
+        getPlaybackDockBounds(
+            windowSize
+        );
+
+
+    return sf::FloatRect(
+        sf::Vector2f(
+            dock.position.x,
+            dock.position.y
+        ),
+        sf::Vector2f(
+            38.0f,
+            dock.size.y
+        )
+    );
+}
+
+
+sf::FloatRect getPlaybackStepBounds(
+    const sf::Vector2u& windowSize
+){
+    const sf::FloatRect dock =
+        getPlaybackDockBounds(
+            windowSize
+        );
+
+
+    return sf::FloatRect(
+        sf::Vector2f(
+            dock.position.x
+                + dock.size.x
+                - 38.0f,
+
+            dock.position.y
+        ),
+        sf::Vector2f(
+            38.0f,
+            dock.size.y
+        )
+    );
+}
+
+sf::FloatRect getPlaybackToggleBounds(
+    const sf::Vector2u& windowSize
+){
+    const sf::FloatRect dock =
+        getPlaybackDockBounds(
+            windowSize
+        );
+
+
+    return sf::FloatRect(
+        sf::Vector2f(
+            dock.position.x
+                + dock.size.x / 2.0f
+                - 19.0f,
+
+            dock.position.y
+        ),
+        sf::Vector2f(
+            38.0f,
+            dock.size.y
+        )
+    );
+}
+
+sf::FloatRect getPlaybackSpeedBounds(
+    const sf::Vector2u& windowSize
+){
+    const sf::FloatRect dock =
+        getPlaybackDockBounds(
+            windowSize
+        );
+
+
+    return sf::FloatRect(
+        sf::Vector2f(
+            dock.position.x
+                + dock.size.x
+                - 84.0f,
+
+            dock.position.y
+        ),
+        sf::Vector2f(
+            42.0f,
+            dock.size.y
+        )
+    );
+}
+
 sf::FloatRect getVisualizationRowBounds(
     const sf::Vector2u& windowSize,
     std::size_t rowIndex
@@ -661,6 +776,200 @@ void drawAlgorithmDropdown(
             textColor
         );
     }
+}
+
+// =====================================
+// Playback Dock
+// =====================================
+
+void drawPlaybackDock(
+    sf::RenderWindow& window,
+    const sf::Font& font,
+    const PathlabUIData& data
+){
+    const sf::FloatRect dock =
+        getPlaybackDockBounds(
+            window.getSize()
+        );
+
+
+    sf::RectangleShape background(
+        dock.size
+    );
+
+    background.setPosition(
+        dock.position
+    );
+
+    background.setFillColor(
+        CONTROL
+    );
+
+    background.setOutlineThickness(
+        1.0f
+    );
+
+    background.setOutlineColor(
+        BORDER
+    );
+
+    window.draw(
+        background
+    );
+
+
+    // Reset
+    drawText(
+        window,
+        font,
+        "|<",
+        dock.position.x + 11.0f,
+        dock.position.y + 9.0f,
+        11,
+        TEXT_SECONDARY
+    );
+
+
+    // Progress
+    const std::string progress =
+        std::to_string(
+            data.playbackIndex
+        )
+        + " / "
+        + std::to_string(
+            data.playbackTotal
+        );
+
+
+    drawText(
+        window,
+        font,
+        "SEARCH PLAYBACK",
+        dock.position.x + 52.0f,
+        dock.position.y + 5.0f,
+        9,
+        TEXT_MUTED
+    );
+
+
+    drawText(
+        window,
+        font,
+        progress,
+        dock.position.x + 52.0f,
+        dock.position.y + 19.0f,
+        10,
+        TEXT_PRIMARY
+    );
+
+    drawText(
+        window,
+        font,
+        data.playbackPlaying
+            ? "||"
+            : ">",
+        dock.position.x
+            + dock.size.x / 2.0f
+            - 4.0f,
+        dock.position.y + 9.0f,
+        11,
+        ACCENT
+    );
+
+    drawText(
+        window,
+        font,
+        data.playbackSpeed,
+        dock.position.x
+            + dock.size.x
+            - 78.0f,
+        dock.position.y + 9.0f,
+        10,
+        ACCENT
+    );
+
+    const float progressRatio =
+        data.playbackTotal > 0
+            ? static_cast<float>(
+                data.playbackIndex
+            )
+            / static_cast<float>(
+                data.playbackTotal
+            )
+            : 0.0f;
+
+
+    const float barX =
+        dock.position.x + 52.0f;
+
+    const float barY =
+        dock.position.y + 31.0f;
+
+    const float barWidth =
+        dock.size.x - 150.0f;
+
+    constexpr float barHeight =
+        2.0f;
+
+
+    sf::RectangleShape progressBackground(
+        sf::Vector2f(
+            barWidth,
+            barHeight
+        )
+    );
+
+    progressBackground.setPosition(
+        sf::Vector2f(
+            barX,
+            barY
+        )
+    );
+
+    progressBackground.setFillColor(
+        BORDER
+    );
+
+    window.draw(
+        progressBackground
+    );
+
+
+    sf::RectangleShape progressFill(
+        sf::Vector2f(
+            barWidth * progressRatio,
+            barHeight
+        )
+    );
+
+    progressFill.setPosition(
+        sf::Vector2f(
+            barX,
+            barY
+        )
+    );
+
+    progressFill.setFillColor(
+        ACCENT
+    );
+
+    window.draw(
+        progressFill
+    );
+
+
+    // Step forward
+    drawText(
+        window,
+        font,
+        ">|",
+        dock.position.x
+            + dock.size.x
+            - 27.0f,
+        dock.position.y + 9.0f,
+        11,
+        TEXT_SECONDARY
+    );
 }
 
 // =====================================
@@ -1506,6 +1815,15 @@ void drawPathlabUI(
         );
     }
 
+    if(data.hasSearchTrace){
+
+        drawPlaybackDock(
+            window,
+            font,
+            data
+        );
+    }
+
     drawBottomBar(window, font);
 }
 
@@ -1639,6 +1957,66 @@ PathlabUIAction handlePathlabUIClick(
 
         if(containsPoint(exploredNodesBounds,position)){
             return PathlabUIAction::ToggleExploredNodes;
+        }
+    }
+
+    if(hasSearchTrace){
+
+        const sf::FloatRect resetBounds =
+            getPlaybackResetBounds(
+                windowSize
+            );
+
+
+        if(containsPoint(
+            resetBounds,
+            position
+        )){
+            return
+                PathlabUIAction::ResetPlayback;
+        }
+
+        const sf::FloatRect toggleBounds =
+            getPlaybackToggleBounds(
+                windowSize
+            );
+
+
+        if(containsPoint(
+            toggleBounds,
+            position
+        )){
+            return
+                PathlabUIAction::TogglePlayback;
+        }
+
+        const sf::FloatRect speedBounds =
+            getPlaybackSpeedBounds(
+                windowSize
+            );
+
+
+        if(containsPoint(
+            speedBounds,
+            position
+        )){
+            return
+                PathlabUIAction::CyclePlaybackSpeed;
+        }
+
+
+        const sf::FloatRect stepBounds =
+            getPlaybackStepBounds(
+                windowSize
+            );
+
+
+        if(containsPoint(
+            stepBounds,
+            position
+        )){
+            return
+                PathlabUIAction::StepPlayback;
         }
     }
 

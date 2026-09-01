@@ -81,6 +81,7 @@ Completed:
 - PATHLAB interactive planning visualizer
 - Cached and batched PATHLAB scene rendering
 - Event-driven, frame-limited PATHLAB application loop
+- Search playback with current-expansion and goal-reached highlighting
 
 Current demos:
 

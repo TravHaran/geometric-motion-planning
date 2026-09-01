@@ -15,6 +15,10 @@ enum class PathlabUIAction{
     ToggleVisibilityGraph,
     ToggleFinalPath,
     ToggleExploredNodes,
+    ResetPlayback,
+    StepPlayback,
+    TogglePlayback,
+    CyclePlaybackSpeed,
     ToggleAlgorithmDropdown,
     SelectDijkstra,
     SelectAStar,
@@ -47,6 +51,14 @@ struct PathlabUIData{
 
     bool showExploredNodes = true;
     bool hasSearchTrace = false;
+
+    std::size_t playbackIndex = 0;
+
+    std::size_t playbackTotal = 0;
+
+    bool playbackPlaying = false;
+
+    std::string playbackSpeed;
 };
 
 bool loadPathlabFont(sf::Font& font);
