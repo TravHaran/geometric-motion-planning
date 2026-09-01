@@ -435,6 +435,21 @@ sf::FloatRect getRunPlannerButtonBounds(const sf::Vector2u& windowSize){
     );
 }
 
+sf::FloatRect getResetCameraButtonBounds(const sf::Vector2u& windowSize){
+    const float canvasWidth = std::max(
+        1.0f,
+        static_cast<float>(windowSize.x) - PATHLAB_SIDE_PANEL_WIDTH
+    );
+
+    return sf::FloatRect(
+        sf::Vector2f(
+            std::max(14.0f, canvasWidth - 130.0f),
+            PATHLAB_TOP_BAR_HEIGHT + 14.0f
+        ),
+        sf::Vector2f(116.0f, 32.0f)
+    );
+}
+
 sf::FloatRect getPlaybackDockBounds(
     const sf::Vector2u& windowSize
 ){
@@ -1636,6 +1651,60 @@ void drawTopBar(
     );
 }
 
+void drawResetCameraButton(
+    sf::RenderWindow& window,
+    const sf::Font& font
+){
+    const sf::FloatRect bounds =
+        getResetCameraButtonBounds(window.getSize());
+
+    const sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
+    const bool hovered = containsPoint(bounds, mousePosition);
+    const bool pressed =
+        hovered
+        && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+
+    drawRoundedSurface(
+        window,
+        bounds,
+        CONTROL_RADIUS,
+        getControlFill(hovered, pressed),
+        hovered ? sf::Color(78, 86, 101) : BORDER
+    );
+
+    sf::RectangleShape viewFrame(sf::Vector2f(13.0f, 10.0f));
+    viewFrame.setPosition(
+        sf::Vector2f(
+            bounds.position.x + 12.0f,
+            bounds.position.y + 11.0f
+        )
+    );
+    viewFrame.setFillColor(sf::Color::Transparent);
+    viewFrame.setOutlineThickness(1.0f);
+    viewFrame.setOutlineColor(hovered ? ACCENT_HOVER : TEXT_SECONDARY);
+    window.draw(viewFrame);
+
+    sf::CircleShape viewCenter(2.0f);
+    viewCenter.setPosition(
+        sf::Vector2f(
+            bounds.position.x + 16.5f,
+            bounds.position.y + 14.0f
+        )
+    );
+    viewCenter.setFillColor(hovered ? ACCENT_HOVER : TEXT_SECONDARY);
+    window.draw(viewCenter);
+
+    drawText(
+        window,
+        font,
+        "RESET VIEW",
+        bounds.position.x + 34.0f,
+        bounds.position.y + 8.0f,
+        10,
+        hovered ? TEXT_PRIMARY : TEXT_SECONDARY
+    );
+}
+
 // =====================================
 // Sidebar
 // =====================================
@@ -2568,6 +2637,8 @@ void drawHelpOverlay(
     drawHelpControlRow(window, font, "SCROLL", "Zoom around the pointer", contentLeft, leftY);
     leftY += rowSpacing;
     drawHelpControlRow(window, font, "OPT + DRAG", "Pan the canvas", contentLeft, leftY);
+    leftY += rowSpacing;
+    drawHelpControlRow(window, font, "RESET VIEW", "Restore opening camera", contentLeft, leftY);
 
     float rightY = sectionStartY;
 
@@ -2647,6 +2718,8 @@ void drawPathlabUI(
 
     drawBottomBar(window, font);
 
+    drawResetCameraButton(window, font);
+
     if(data.algorithmDropdownOpen){
 
         drawAlgorithmDropdown(
@@ -2678,6 +2751,10 @@ PathlabUIAction handlePathlabUIClick(
 ){
     if(containsPoint(getHelpButtonBounds(windowSize), position)){
         return PathlabUIAction::OpenHelpOverlay;
+    }
+
+    if(containsPoint(getResetCameraButtonBounds(windowSize), position)){
+        return PathlabUIAction::ResetCamera;
     }
 
     const sf::FloatRect selectorBounds =

@@ -367,6 +367,13 @@ void PathlabApp::handleMousePressed(
 
             return;
 
+        case PathlabUIAction::ResetCamera:
+
+            algorithmDropdownOpen = false;
+            resetCanvasView();
+
+            return;
+
         case PathlabUIAction::RunPlanner:
 
             algorithmDropdownOpen =
@@ -1153,24 +1160,33 @@ void PathlabApp::rebuildCanvasRenderCache(){
 }
 
 void PathlabApp::initializeViews(){
+    resetCanvasView();
+}
+
+void PathlabApp::resetCanvasView(){
     const sf::Vector2u windowSize = window.getSize();
 
     const float canvasWidth =
-        static_cast<float>(windowSize.x) - PATHLAB_SIDE_PANEL_WIDTH;
+        std::max(
+            1.0f,
+            static_cast<float>(windowSize.x) - PATHLAB_SIDE_PANEL_WIDTH
+        );
 
-    const float canvasHeight =
+    const float canvasHeight = std::max(
+        1.0f,
         static_cast<float>(windowSize.y)
-        - PATHLAB_TOP_BAR_HEIGHT
-        - PATHLAB_BOTTOM_BAR_HEIGHT;
+            - PATHLAB_TOP_BAR_HEIGHT
+            - PATHLAB_BOTTOM_BAR_HEIGHT
+    );
 
     canvasZoom = 1.0f;
+    canvasPanning = false;
 
-    canvasView = sf::View(
+    canvasView.setCenter(
         sf::Vector2f(
             canvasWidth / 2.0f,
             PATHLAB_TOP_BAR_HEIGHT + canvasHeight / 2.0f
-        ),
-        sf::Vector2f(canvasWidth, canvasHeight)
+        )
     );
 
     updateViewLayout();

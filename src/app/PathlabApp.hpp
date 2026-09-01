@@ -123,6 +123,8 @@ class PathlabApp{
 
         void initializeViews();
 
+        void resetCanvasView();
+
         void updateViewLayout();
 
         // =====================================

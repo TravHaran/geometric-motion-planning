@@ -83,7 +83,8 @@ Completed:
 - Event-driven, frame-limited PATHLAB application loop
 - Search playback with current-expansion and goal-reached highlighting in a
   contextual floating canvas dock
-- Canvas camera with cursor-centered zoom and Option-drag panning
+- Canvas camera with cursor-centered zoom, Option-drag panning, and a
+  screen-space reset control
 - Cohesive rounded UI controls, vector icons, hover/pressed feedback, and
   responsive sidebar spacing
 - Contextual screen-space Help / Controls overlay with modal input blocking

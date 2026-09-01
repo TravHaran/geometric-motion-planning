@@ -72,6 +72,7 @@ and playback controls are operated with the left mouse button.
 | Toggle expanded nodes | Click **Explored Nodes** after a search trace exists |
 | Pan the canvas | Hold `Option` (`Alt`) and left-drag |
 | Zoom around the pointer | Use the mouse wheel or trackpad scroll gesture over the canvas |
+| Reset the camera | Click **Reset View** at the upper-right of the canvas |
 | Reset search playback | Click the reset control in the playback dock |
 | Play or pause playback | Click the play/pause control in the playback dock |
 | Advance one expansion | Click the step control in the playback dock |
