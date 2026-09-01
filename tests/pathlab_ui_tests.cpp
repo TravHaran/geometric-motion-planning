@@ -3,8 +3,16 @@
 #include <iostream>
 
 #include "../src/ui/PathlabUI.hpp"
+#include "../src/ui/PathlabUILayout.hpp"
 
 namespace{
+
+sf::Vector2i centerOf(const sf::FloatRect& bounds){
+    return {
+        static_cast<int>(bounds.position.x + bounds.size.x / 2.0f),
+        static_cast<int>(bounds.position.y + bounds.size.y / 2.0f)
+    };
+}
 
 void testAlgorithmOptionsAreSelectedByIndex(){
     const sf::Vector2u windowSize{1000, 800};
@@ -19,18 +27,16 @@ void testAlgorithmOptionsAreSelectedByIndex(){
         "Future planner"
     };
 
-    constexpr int optionCenterX = 850;
-    constexpr int firstOptionCenterY = 170;
-    constexpr int optionHeight = 32;
-
     for(std::size_t i = 0; i < data.algorithmOptions.size(); ++i){
+        const sf::FloatRect optionBounds =
+            pathlab_ui_detail::getAlgorithmOptionBounds(
+                windowSize,
+                i
+            );
+
         const PathlabUIInteraction interaction =
             handlePathlabUIClick(
-                {
-                    optionCenterX,
-                    firstOptionCenterY
-                        + optionHeight * static_cast<int>(i)
-                },
+                centerOf(optionBounds),
                 windowSize,
                 data
             );
@@ -48,9 +54,12 @@ void testAlgorithmSelectorToggleRemainsSeparate(){
     data.algorithmDropdownOpen = false;
     data.algorithmOptions = {"BFS", "Dijkstra", "A*"};
 
+    const sf::FloatRect selectorBounds =
+        pathlab_ui_detail::getAlgorithmSelectorBounds(windowSize);
+
     const PathlabUIInteraction interaction =
         handlePathlabUIClick(
-            {850, 138},
+            centerOf(selectorBounds),
             windowSize,
             data
         );

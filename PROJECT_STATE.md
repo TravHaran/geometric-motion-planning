@@ -87,6 +87,8 @@ Completed:
   visualization, and UI, with centralized CTest registration
 - Visibility regression coverage for segments that enter obstacle interiors
   through a vertex and terminate on another boundary edge
+- Split PATHLAB application rendering, UI layout, and UI interaction modules
+  with shared layout-driven hit testing
 - Cached and batched PATHLAB scene rendering
 - Event-driven, frame-limited PATHLAB application loop
 - Search playback with current-expansion and goal-reached highlighting in a

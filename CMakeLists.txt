@@ -97,6 +97,8 @@ target_link_libraries(
 add_library(
     pathlab_ui
     src/ui/PathlabUI.cpp
+    src/ui/PathlabUIInteraction.cpp
+    src/ui/PathlabUILayout.cpp
 )
 
 target_include_directories(
@@ -223,6 +225,7 @@ add_executable(
     demo_2e
     demos/demo_2e_pathlab.cpp
     src/app/PathlabApp.cpp
+    src/app/PathlabAppRendering.cpp
 )
 
 target_link_libraries(
