@@ -236,17 +236,21 @@ geometric-motion-planning/
 ├── theory.sh
 ├── assets/
 │   └── fonts/
+├── docs/
+│   └── theory.md
 ├── theory/
 │   ├── theory.tex
 │   ├── sections/
 │   └── figures/
 ├── src/
 │   ├── geometry/
-│   ├── environment/
 │   ├── graph/
 │   ├── planners/
 │   ├── visualization/
-│   └── experiments/
+│   ├── ui/
+│   └── app/
 ├── demos/
 ├── tests/
-└── build/
+├── build/
+└── build-release/
+```

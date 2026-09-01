@@ -1,531 +1,173 @@
-# Geometric Motion Planning
-
-A C++ research and learning platform for exploring **computational geometry, classical motion planning, and geometric approximations of humanoid dynamic feasibility**.
-
-The project begins with computational geometry algorithms implemented from scratch and incrementally develops them into a complete 2D motion-planning toolkit. The long-term goal is to use the same platform to investigate whether geometric representations can provide computationally inexpensive approximations of more expensive humanoid dynamic-feasibility calculations.
-
----
-
-## Project Motivation
-
-Motion planning sits at the intersection of robotics, computational geometry, graph algorithms, optimization, and dynamics.
-
-Many robotics libraries provide highly optimized implementations of these algorithms, but using them directly can hide much of the geometry and algorithmic reasoning involved.
-
-This project takes a bottom-up approach.
-
-Instead of beginning with an existing planning framework, the core geometric algorithms and planners are implemented directly in C++. Each stage is unit tested and visualized through an interactive SFML interface.
-
-The project progresses through:
-
-**Computational Geometry → Classical Motion Planning → Configuration Space → Sampling-Based Planning → Humanoid Footstep Planning → Reduced-Order Dynamics → Geometric Dynamic-Feasibility Approximation**
-
-This allows the same codebase to serve both as a learning platform and eventually as an experimental robotics research platform.
-
----
-
-# Long-Term Research Question
-
-The eventual research question motivating the project is:
-
-> **Can computational geometry provide extremely cheap approximations of expensive humanoid dynamic feasibility?**
-
-Humanoid planners must reason not only about obstacle avoidance but also about whether candidate footsteps and transitions are dynamically feasible.
-
-High-fidelity dynamic checks can be computationally expensive, particularly when thousands or millions of candidate transitions must be evaluated during planning.
-
-The long-term goal of this project is to investigate whether the dynamically feasible transition space has geometric structure that can be approximated using representations such as:
-
-- bounding boxes
-- ellipsoids
-- convex hulls
-- convex decompositions
-- polytopes
-- signed distance fields
-
-If conservative geometric approximations can reject infeasible transitions extremely quickly while retaining valid ones, they could potentially act as inexpensive filters inside humanoid planning algorithms.
-
----
-
-# Development Roadmap
-
-The project is intentionally developed incrementally. Every major stage introduces new algorithms, unit tests, experiments, and visualization capabilities.
-
-## Phase 1 — Computational Geometry Foundations
-
-Implement the geometric primitives and predicates required by later planning algorithms.
-
-### Geometry
-
-- [x] 2D points
-- [x] line segments
-- [x] polygons
-- [x] paths
-- [x] orientation / 2D cross product
-- [x] point-on-segment test
-- [x] segment intersection
-- [x] polygon edge generation
-- [x] segment-polygon boundary intersection
-- [x] point-in-polygon using winding numbers
-- [x] segment collision checking
-- [x] path collision checking
-
-### Visualization
-
-- [x] SFML visualization framework
-- [x] interactive segment creation
-- [x] segment-intersection visualization
-- [ ] interactive polygon construction
-- [ ] point-in-polygon visualization
-- [ ] path collision visualization
-
----
-
-## Phase 2 — Classical Geometric Motion Planning
-
-Build complete planners using the geometry kernel.
-
-### Visibility Graph
-
-Construct a graph containing:
-
-- start position
-- goal position
-- polygon obstacle vertices
-
-Edges connect mutually visible vertices.
-
-Planned components:
-
-- [ ] visibility predicate
-- [ ] visibility graph construction
-- [ ] Euclidean edge weights
-- [ ] graph visualization
-- [ ] Dijkstra shortest-path search
-- [ ] A* search
-- [ ] path reconstruction
-
-The resulting planner will compute shortest collision-free paths through polygonal environments.
-
-### Clearance-Based Planning
-
-Implement planning methods that prefer paths farther from obstacles.
-
-Planned topics include:
-
-- [ ] Voronoi diagrams
-- [ ] generalized Voronoi diagrams / medial-axis concepts
-- [ ] maximum-clearance paths
-- [ ] shortest-path vs clearance tradeoffs
-
----
-
-## Phase 3 — Configuration Space
-
-The initial planner treats the robot as a point.
-
-Real robots have physical dimensions.
-
-Configuration-space methods will account for robot geometry using techniques such as:
-
-- [ ] robot footprints
-- [ ] Minkowski sums
-- [ ] configuration-space obstacle construction
-- [ ] obstacle inflation
-- [ ] collision checking for finite-sized robots
-- [ ] SE(2) configuration spaces
-
-This phase will demonstrate the difference between planning for a point robot and planning for a robot with a physical footprint.
-
----
-
-## Phase 4 — Sampling-Based Motion Planning
-
-Implement and compare widely used sampling-based planners.
-
-- [ ] Probabilistic Roadmap (PRM)
-- [ ] Rapidly-exploring Random Tree (RRT)
-- [ ] RRT*
-- [ ] nearest-neighbor search
-- [ ] random configuration sampling
-- [ ] local planners
-- [ ] path reconstruction
-
-These planners will run in the same environments as the classical geometric planners, allowing direct comparisons.
-
----
-
-## Phase 5 — Planner Benchmarking
-
-Develop an experimental framework for comparing planning algorithms.
-
-Metrics will include:
-
-- path length
-- minimum obstacle clearance
-- planning time
-- graph size
-- nodes expanded
-- collision checks
-- success rate
-
-Randomized environments will allow planners to be evaluated across many trials rather than isolated examples.
-
-Potential comparisons include:
-
-**Visibility Graph vs Voronoi vs PRM vs RRT vs RRT\***
-
----
-
-## Phase 6 — Geometric Motion Constraints
-
-Introduce constraints beyond simple collision avoidance.
-
-Possible extensions include:
-
-- [ ] bounded turning angles
-- [ ] path smoothness
-- [ ] minimum turning radius
-- [ ] curvature constraints
-- [ ] Dubins-style motion
-
-One motivation is to explore how theoretical computational-geometry problems involving bounded-angle paths relate to physically meaningful robotic motion constraints.
-
----
-
-# Humanoid Robotics Extension
-
-Once the general planning framework is mature, the project will extend from mobile-robot paths to **humanoid footstep planning**.
-
-## Phase 7 — Geometric Footstep Planning
-
-A humanoid state may contain information such as:
-
-```text
-Left foot pose
-Right foot pose
-Next stepping foot
-```
-
-A footstep planner will use A* or related graph-search methods to search possible step sequences.
-
-Initial feasibility checks will be purely geometric:
-
-- step length
-- step width
-- relative foot orientation
-- collision avoidance
-- support-foot constraints
-- geometric reachability regions
-
-This establishes a baseline geometric footstep planner before dynamics are introduced.
-
----
-
-## Phase 8 — Reduced-Order Humanoid Dynamics
-
-Introduce progressively richer models of humanoid balance and locomotion.
-
-Planned models include:
-
-- [ ] Linear Inverted Pendulum Model (LIPM)
-- [ ] Zero Moment Point (ZMP)
-- [ ] Capture Point
-- [ ] Divergent Component of Motion (DCM)
-- [ ] Angular-Momentum Linear Inverted Pendulum (ALIP)
-
-These models will provide increasingly realistic dynamic-feasibility checks for candidate footstep transitions.
-
----
-
-## Phase 9 — Dynamic-Feasibility Dataset
-
-Once a sufficiently accurate dynamic checker exists, generate a large dataset of candidate humanoid transitions.
-
-Each transition can be labeled:
-
-```text
-Dynamically feasible
-```
-
-or:
-
-```text
-Dynamically infeasible
-```
-
-with associated state variables and transition geometry.
-
-This dataset becomes the experimental foundation for studying the structure of humanoid dynamic feasibility.
-
----
-
-## Phase 10 — Geometry of Dynamic Feasibility
-
-Analyze the topology and geometry of the dynamically feasible transition set.
-
-Candidate representations include:
-
-- axis-aligned bounding boxes
-- oriented bounding boxes
-- ellipsoids
-- convex hulls
-- convex polytopes
-- convex decompositions
-- signed distance fields
-
-The objective is to determine how accurately these representations approximate the ground-truth dynamic-feasibility region.
-
-Of particular interest are **conservative approximations** that can guarantee that accepted transitions remain dynamically feasible.
-
----
-
-## Phase 11 — Geometric Dynamic-Feasibility Filter
-
-The final research stage will integrate the resulting approximation into the humanoid planner.
-
-Instead of evaluating every candidate transition using the expensive dynamic model:
-
-```text
-Candidate Footstep
-        |
-        v
-Cheap Geometric Filter
-        |
-   +----+----+
-   |         |
-Reject     Possibly
-Immediately Feasible
-             |
-             v
-      Dynamic Checker
-```
-
-The geometric filter should be extremely inexpensive compared with the full dynamic-feasibility calculation.
-
-Experiments can then measure:
-
-- computation-time reduction
-- false rejection rate
-- false acceptance rate
-- planning success rate
-- resulting path/footstep quality
-
-This will directly investigate whether computational geometry can accelerate humanoid motion planning.
-
----
-
-# Interactive Visualization
-
-The project uses **SFML** to visualize algorithms as they are developed.
-
-Rather than building the GUI only after the algorithms are complete, visualization is developed alongside the planning system.
-
-Planned visualization milestones include:
-
-### Demo 1 — Geometry Sandbox
-
-Interactive visualization of:
-
-- segment intersection
-- polygon construction
-- point-in-polygon queries
-- path collision checking
-
-### Demo 2 — Visibility Graph
-
-Display obstacle vertices and all valid visibility edges.
-
-### Demo 3 — Shortest-Path Planner
-
-Select a start and goal and visualize the shortest collision-free path.
-
-### Demo 4 — Configuration Space
-
-Compare point-robot planning with finite-sized robot planning.
-
-### Demo 5 — Clearance Planning
-
-Visualize shortest paths versus maximum-clearance paths.
-
-### Demo 6 — Sampling-Based Planning
-
-Visualize PRM and RRT construction in real time.
-
-### Demo 7 — Planner Comparison
-
-Run multiple planners on the same environment and compare their results and performance.
-
-Future humanoid extensions will visualize footsteps, reachability regions, dynamically feasible transitions, and geometric approximations of feasibility regions.
-
----
-
-# Current Demo
-
-The current interactive demo implements **segment-intersection visualization**.
-
-The user selects four points:
-
-```text
-A → B
-
-C → D
-```
-
-which define two line segments.
-
-The program evaluates the segments using the project's computational-geometry implementation and visualizes the result:
-
-```text
-Green → no intersection
-Red   → intersection
-```
-
-Press `R` to reset the environment.
-
----
-
-# Building the Project
-
-## Requirements
-
-- C++17
-- CMake
-- SFML 3
-
-On macOS with Homebrew:
+# PATHLAB — Geometric Motion Planning
+
+PATHLAB is an educational computational-geometry and motion-planning project
+written in C++17 with SFML 3. It builds classical 2D planning tools from first
+principles, pairs them with focused tests and theory notes, and exposes their
+behavior through an interactive visualizer.
+
+The current implementation plans shortest paths for a point robot among
+polygonal obstacles using visibility graphs, Dijkstra's algorithm, or A*. The
+long-term direction is to progress from these foundations toward clearance
+planning, configuration spaces, sampling-based methods, and eventually
+humanoid motion-planning research. Those later stages are roadmap goals, not
+current capabilities.
+
+For detailed implementation status, conventions, and milestones, see
+[PROJECT_STATE.md](PROJECT_STATE.md).
+
+## Current features
+
+- Geometry primitives for points, segments, polygons, paths, and triangles
+- Orientation, point-on-segment, segment-intersection, point-in-polygon, and
+  collision predicates
+- Polygonal obstacle environments with boundary-aware collision semantics
+- Undirected visibility graphs with Euclidean edge weights
+- Dijkstra and A* shortest-path search with path reconstruction
+- Planner instrumentation, including expanded-node order and count
+- Focused geometry, graph, Dijkstra, and A* regression tests
+- A sequence of permanent SFML demos documenting project milestones
+- PATHLAB, an interactive planning and search-visualization application
+
+## PATHLAB
+
+PATHLAB is the current primary application (`demo_2e`). It provides an
+interactive canvas for constructing polygonal scenes, placing start and goal
+positions, selecting Dijkstra or A*, and running the planner.
+
+The interface can display obstacles, the visibility graph, the final path, and
+expanded nodes independently. Its metrics panel reports planner status,
+obstacle and graph counts, path length and size, **Nodes Expanded**, graph-build
+time, search time, and total time.
+
+When a search trace is available, a floating playback dock can reset, play,
+pause, or single-step through node expansions. Playback distinguishes the
+current node, previously expanded nodes, and completion at the goal. Five
+playback speeds are available.
+
+The canvas supports cursor-centered zoom and panning without mixing camera
+logic into the geometry or planner layers. Static canvas, obstacle, graph, and
+path data are cached in batched SFML vertex arrays. Outside active playback,
+the application waits for input instead of continuously redrawing an unchanged
+scene.
+
+## PATHLAB controls
+
+All placement actions occur on the canvas. Sidebar rows, buttons, selectors,
+and playback controls are operated with the left mouse button.
+
+| Action | Control |
+| --- | --- |
+| Add an obstacle vertex | Left-click the canvas while in the default obstacle mode |
+| Finish an obstacle | `Enter` after placing at least three vertices |
+| Place or replace the start | Press `S`, then left-click the canvas |
+| Place or replace the goal | Press `G`, then left-click the canvas |
+| Cancel placement or discard an unfinished obstacle | `Esc` |
+| Select a planner | Choose **Dijkstra** or **A\*** from the Algorithm selector |
+| Run the selected planner | Click **Run Planner** or press `Space` |
+| Reset the complete scene | `R` |
+| Toggle the visibility graph | `V` or click **Visibility Graph** |
+| Toggle obstacles | Click **Obstacles** |
+| Toggle the final path | Click **Final Path** |
+| Toggle expanded nodes | Click **Explored Nodes** after a search trace exists |
+| Pan the canvas | Hold `Option` (`Alt`) and left-drag |
+| Zoom around the pointer | Use the mouse wheel or trackpad scroll gesture over the canvas |
+| Reset search playback | Click the reset control in the playback dock |
+| Play or pause playback | Click the play/pause control in the playback dock |
+| Advance one expansion | Click the step control in the playback dock |
+| Change playback speed | Click the speed control to cycle `0.25×`, `0.5×`, `1×`, `2×`, and `4×` |
+
+`Esc` first closes the open Algorithm menu when applicable. PATHLAB does not
+currently provide a separate clear command; `R` removes all obstacles, the
+start and goal, and the current planning result.
+
+## Build and run
+
+### Requirements
+
+- A C++17 compiler
+- CMake 3.16 or newer
+- SFML 3 with the Graphics, Window, and System components
+
+On macOS with Homebrew, the dependencies can be installed with:
 
 ```bash
-brew install sfml
+brew install cmake sfml
 ```
 
-## Build and Run
-
-A helper script is provided:
+Use the repository's runner to configure a Release build in `build-release/`,
+build one target, and launch it:
 
 ```bash
-./run.sh
+./run.sh demo_2e
 ```
 
-This configures the CMake project when necessary, builds the application, and launches the SFML demo.
+The script requires a target name; running `./run.sh` without one only prints
+usage information. Available demo targets are:
 
----
+| Target | Milestone |
+| --- | --- |
+| `demo_1a` | Segment intersection |
+| `demo_1b` | Point in polygon |
+| `demo_1c` | Path collision |
+| `demo_2a` | Visibility graph |
+| `demo_2b` | Dijkstra on a visibility graph |
+| `demo_2c` | Interactive Dijkstra planner |
+| `demo_2d` | Interactive Dijkstra/A* comparison |
+| `demo_2e` | PATHLAB |
 
-# Running Unit Tests
+## Tests
 
-Geometry algorithms are tested independently from the visualization layer.
-
-Run:
+Run the complete regression suite from the repository root:
 
 ```bash
 ./test.sh
 ```
 
-The geometry library intentionally has no dependency on SFML.
+This builds and runs the geometry, graph, Dijkstra, and A* test executables.
+The mathematical and planning layers remain independent of SFML.
 
-This keeps the core planning algorithms independent from the user interface.
+## Project structure
 
----
+| Path | Responsibility |
+| --- | --- |
+| `src/geometry/` | Geometry types, predicates, collision logic, and polygon triangulation |
+| `src/graph/` | Graph representation and visibility-graph construction |
+| `src/planners/` | Dijkstra and A* search implementations |
+| `src/visualization/` | Reusable SFML drawing helpers and legacy demo panels |
+| `src/ui/` | PATHLAB interface layout, drawing, and hit testing |
+| `src/app/` | PATHLAB application state, input, planning orchestration, playback, camera, and rendering |
+| `demos/` | Executable milestones from foundational geometry through PATHLAB |
+| `tests/` | Lightweight assert-based regression tests |
+| `theory/` | LaTeX notes that develop the geometry and planning concepts alongside the code |
 
-# Project Architecture
+The dependency direction is intentionally simple: geometry, graph, and planner
+code do not depend on SFML; visualization and application code consume their
+results.
 
-```text
-src/
-├── geometry/
-│   ├── Point.hpp
-│   ├── Segment.hpp
-│   ├── Polygon.hpp
-│   ├── Path.hpp
-│   ├── Geometry.hpp
-│   └── Geometry.cpp
-│
-├── environment/
-│
-├── graph/
-│
-├── planners/
-│
-├── visualization/
-│   ├── Renderer.hpp
-│   └── Renderer.cpp
-│
-├── experiments/
-│
-└── main.cpp
+## Roadmap
 
-tests/
-└── geometry_tests.cpp
-```
+The current classical 2D planning phase remains in progress. Its next major
+milestone is Voronoi/generalized Voronoi geometry and maximum-clearance
+planning, including comparison with visibility-graph shortest paths.
 
-The project follows a layered design:
+Later planned stages include:
 
-```text
-Geometry
-   ↓
-Environment
-   ↓
-Planning Algorithms
-   ↓
-Experiments
+1. Configuration-space geometry for finite-sized robots
+2. Sampling-based planning with PRM, RRT, and RRT*
+3. Humanoid footstep planning
+4. Reduced-order humanoid dynamics
+5. Dynamic-feasibility datasets and geometric approximations
 
-        ↑
-        |
-Visualization
-```
+These items describe intended research and development directions. They have
+not yet been implemented.
 
-The geometry and planning layers remain independent of SFML. The visualization layer consumes their results and renders them.
+## Development philosophy
 
----
+The project follows the sequence:
 
-# Design Philosophy
+> Theory → Implementation → Tests → Visualization → Experiment
 
-This project prioritizes:
-
-**Understanding over abstraction.**  
-Core geometric and planning algorithms are implemented directly where practical rather than hidden behind large geometry libraries.
-
-**Correctness before optimization.**  
-Algorithms are unit tested before being integrated into planners.
-
-**Algorithms before aesthetics.**  
-The GUI exists to expose and understand algorithm behavior rather than hide it.
-
-**Incremental development.**  
-Every major algorithm produces a working visual milestone before the next major stage begins.
-
-**Experimental reproducibility.**  
-Planning algorithms will eventually be benchmarked using common environments, metrics, and datasets.
-
----
-
-# Status
-
-🚧 **Active Development**
-
-Current focus:
-
-> Computational geometry foundations and interactive visualization.
-
-Current milestone:
-
-> **Demo 1A — Segment Intersection Sandbox**
-
-Next milestone:
-
-> **Demo 1B — Interactive Polygon and Point-in-Polygon Visualization**
-
----
-
-# Future Research Direction
-
-The long-term objective is to connect classical computational geometry with modern humanoid robotics.
-
-The project asks whether geometric structure hidden inside dynamically feasible humanoid motion can be exploited to produce planning algorithms that are substantially cheaper while remaining useful and interpretable.
-
-The same computational-geometry foundations used to answer simple questions such as:
-
-> "Do these two segments intersect?"
-
-will eventually be used to investigate a considerably harder question:
-
-> **"Can geometry tell us whether a humanoid motion is likely to be dynamically feasible before we perform the expensive dynamics calculation?"**
+Core algorithms are implemented directly where practical so their geometric
+and planning assumptions remain visible. Readability and correctness take
+priority over premature optimization, while each demo preserves a working
+milestone in the project's progression.
