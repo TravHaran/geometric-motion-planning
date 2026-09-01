@@ -40,6 +40,8 @@ class PathlabApp{
         // =====================================
         void processEvents();
 
+        void processEvent(const sf::Event& event);
+
         void handleMousePressed(
             const sf::Event::MouseButtonPressed& event
         );
@@ -81,12 +83,34 @@ class PathlabApp{
 
         void drawPath();
 
+        void rebuildCanvasRenderCache();
+
+        void rebuildObstacleRenderCache();
+
+        void rebuildPlanningRenderCache();
+
         // =====================================
         // Window / resources
         // =====================================
         sf::RenderWindow window;
 
         sf::Font uiFont;
+
+        sf::VertexArray canvasGridVertices{sf::PrimitiveType::Lines};
+
+        sf::VertexArray obstacleFillVertices{sf::PrimitiveType::Triangles};
+
+        sf::VertexArray obstacleBorderVertices{sf::PrimitiveType::Lines};
+
+        sf::VertexArray obstacleMarkerVertices{sf::PrimitiveType::Triangles};
+
+        sf::VertexArray visibilityGraphVertices{sf::PrimitiveType::Lines};
+
+        sf::VertexArray visibilityNodeVertices{sf::PrimitiveType::Triangles};
+
+        sf::VertexArray pathVertices{sf::PrimitiveType::Triangles};
+
+        sf::VertexArray pathMarkerVertices{sf::PrimitiveType::Triangles};
 
         // =====================================
         // Scene state

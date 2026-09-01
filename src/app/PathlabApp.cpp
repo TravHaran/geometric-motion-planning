@@ -9,61 +9,73 @@
 
 namespace{
 
+sf::Vector2f toVector(const Point& point){
+    return {
+        static_cast<float>(point.x),
+        static_cast<float>(point.y)
+    };
+}
 
-// bool isConvexForRendering(
-//     const Polygon& polygon
-// ){
-//     if(polygon.vertices.size() < 3) return false;
+void appendLine(
+    sf::VertexArray& vertices,
+    const Point& a,
+    const Point& b,
+    const sf::Color& color
+){
+    vertices.append(sf::Vertex{toVector(a), color});
+    vertices.append(sf::Vertex{toVector(b), color});
+}
 
+void appendTriangle(
+    sf::VertexArray& vertices,
+    const Triangle& triangle,
+    const sf::Color& color
+){
+    vertices.append(sf::Vertex{toVector(triangle.a), color});
+    vertices.append(sf::Vertex{toVector(triangle.b), color});
+    vertices.append(sf::Vertex{toVector(triangle.c), color});
+}
 
-//     double previousCross = 0.0;
+void appendFilledCircle(
+    sf::VertexArray& vertices,
+    const Point& center,
+    float radius,
+    const sf::Color& color
+){
+    constexpr std::size_t segmentCount = 10;
+    constexpr double twoPi = 6.283185307179586;
 
+    const sf::Vector2f centerPosition = toVector(center);
 
-//     const std::size_t n = polygon.vertices.size();
+    for(std::size_t i = 0; i < segmentCount; ++i){
+        const double firstAngle = twoPi * static_cast<double>(i) / segmentCount;
+        const double secondAngle = twoPi * static_cast<double>(i + 1) / segmentCount;
 
+        const sf::Vector2f firstPoint{
+            centerPosition.x + radius * static_cast<float>(std::cos(firstAngle)),
+            centerPosition.y + radius * static_cast<float>(std::sin(firstAngle))
+        };
 
-//     for(std::size_t i = 0; i < n; ++i){
-//         const Point& a = polygon.vertices[i];
+        const sf::Vector2f secondPoint{
+            centerPosition.x + radius * static_cast<float>(std::cos(secondAngle)),
+            centerPosition.y + radius * static_cast<float>(std::sin(secondAngle))
+        };
 
-//         const Point& b = polygon.vertices[(i + 1) % n];
+        vertices.append(sf::Vertex{centerPosition, color});
+        vertices.append(sf::Vertex{firstPoint, color});
+        vertices.append(sf::Vertex{secondPoint, color});
+    }
+}
 
-//         const Point& c = polygon.vertices[(i + 2) % n];
-
-//         const double cross = 
-//             (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x);
-
-//         if(std::abs(cross) < 1e-9){
-//             continue;
-//         }
-
-//         if(previousCross == 0.0){
-//             previousCross = cross;
-//             continue;
-//         }
-
-//         if((cross > 0.0) != (previousCross > 0.0)){
-//             return false;
-//         }
-//     }
-
-//     return true;
-// }
-
-void drawThickSegment(
-    sf::RenderWindow& window,
+void appendThickSegment(
+    sf::VertexArray& vertices,
     const Point& a,
     const Point& b,
     float thickness,
     const sf::Color& color
 ){
-    const sf::Vector2f start{
-        static_cast<float>(a.x), static_cast<float>(a.y)
-    };
-
-
-    const sf::Vector2f end{
-        static_cast<float>(b.x), static_cast<float>(b.y)
-    };
+    const sf::Vector2f start = toVector(a);
+    const sf::Vector2f end = toVector(b);
 
     const sf::Vector2f direction =
         end - start;
@@ -86,17 +98,13 @@ void drawThickSegment(
 
     const sf::Vector2f offset = perpendicular * (thickness / 2.0f);
 
-    sf::VertexArray strip(sf::PrimitiveType::TriangleStrip);
+    vertices.append(sf::Vertex{start + offset, color});
+    vertices.append(sf::Vertex{start - offset, color});
+    vertices.append(sf::Vertex{end + offset, color});
 
-    strip.append(sf::Vertex{start + offset, color});
-
-    strip.append(sf::Vertex{start - offset, color});
-
-    strip.append(sf::Vertex{end + offset, color});
-
-    strip.append(sf::Vertex{end - offset, color});
-
-    window.draw(strip);
+    vertices.append(sf::Vertex{end + offset, color});
+    vertices.append(sf::Vertex{start - offset, color});
+    vertices.append(sf::Vertex{end - offset, color});
 }
 
 void drawEndpointMarker(
@@ -202,37 +210,55 @@ PathlabApp::PathlabApp() : window(
     sf::VideoMode({1200, 800}),
     "PATHLAB - Path Planning Visualizer"
 ){
+    window.setFramerateLimit(60);
     window.setMinimumSize(sf::Vector2u{900, 650});
+
+    rebuildCanvasRenderCache();
 
     if(!loadPathlabFont(uiFont)) window.close();
 }
 
 void PathlabApp::run(){
+    render();
+
     while(window.isOpen()){
         processEvents();
-        render();
+
+        if(window.isOpen()){
+            render();
+        }
     }
 }
 
 void PathlabApp::processEvents(){
+    // PATHLAB has no animation, so wait instead of continuously redrawing
+    // an unchanged scene. The frame cap still protects against event floods.
+    if(const std::optional event = window.waitEvent()){
+        processEvent(*event);
+    }
+
     while(const std::optional event = window.pollEvent()){
-        if(event->is<sf::Event::Closed>()){
-            window.close();
-        }
+        processEvent(*event);
+    }
+}
 
+void PathlabApp::processEvent(const sf::Event& event){
+    if(event.is<sf::Event::Closed>()){
+        window.close();
+    }
 
-        if(const auto* resized = event->getIf<sf::Event::Resized>()){
-            sf::FloatRect visibleArea({0.0f, 0.0f}, sf::Vector2f(resized->size));
-            window.setView(sf::View(visibleArea));
-        }
+    if(const auto* resized = event.getIf<sf::Event::Resized>()){
+        sf::FloatRect visibleArea({0.0f, 0.0f}, sf::Vector2f(resized->size));
+        window.setView(sf::View(visibleArea));
+        rebuildCanvasRenderCache();
+    }
 
-        if(const auto* mousePressed = event->getIf<sf::Event::MouseButtonPressed>()){
-            handleMousePressed(*mousePressed);
-        }
+    if(const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()){
+        handleMousePressed(*mousePressed);
+    }
 
-        if(const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()){
-            handleKeyPressed(*keyPressed);
-        }
+    if(const auto* keyPressed = event.getIf<sf::Event::KeyPressed>()){
+        handleKeyPressed(*keyPressed);
     }
 }
 
@@ -272,6 +298,7 @@ void PathlabApp::handleKeyPressed(
 
             currentObstacleVertices.clear();
 
+            rebuildObstacleRenderCache();
             invalidatePlanningResult();
         }
     }
@@ -311,6 +338,7 @@ void PathlabApp::resetScene(){
     start.reset();
     goal.reset();
     inputMode = InputMode::Obstacle;
+    rebuildObstacleRenderCache();
     invalidatePlanningResult();
 }
 
@@ -337,96 +365,9 @@ void PathlabApp::render(){
 }
 
 void PathlabApp::drawObstacles(){
-    const sf::Color obstacleFill{35, 39,47};
-
-    const sf::Color obstacleBorder{112, 119, 132};
-
-    const sf::Color vertexColor{165, 171, 182};
-
-    for(const Polygon& obstacle : obstacles){
-        const std::size_t n = obstacle.vertices.size();
-        if(n < 3) continue;
-
-        // -----------------------------------
-        // Fill obstacles using triangulation
-        // -----------------------------------
-
-        const std::vector<Triangle> triangles = triangulatePolygon(obstacle);
-
-        for(const Triangle& triangle : triangles){
-            sf::VertexArray fill(sf::PrimitiveType::Triangles);
-            fill.append(
-                sf::Vertex{
-                    sf::Vector2f(
-                        static_cast<float>(triangle.a.x), 
-                        static_cast<float>(triangle.a.y)),
-                        obstacleFill
-                }
-            );
-
-            fill.append(
-                sf::Vertex{
-                    sf::Vector2f(
-                        static_cast<float>(triangle.b.x), 
-                        static_cast<float>(triangle.b.y)),
-                        obstacleFill
-                }
-            );
-
-            fill.append(
-                sf::Vertex{
-                    sf::Vector2f(
-                        static_cast<float>(triangle.c.x), 
-                        static_cast<float>(triangle.c.y)),
-                        obstacleFill
-                }
-            );
-
-            window.draw(fill);
-        }
-
-
-        // ---------------------------------
-        // Border
-        // ---------------------------------
-
-        for(std::size_t i = 0; i < n;++i){
-
-            Segment edge{
-                obstacle.vertices[i], 
-                obstacle.vertices[(i + 1) % n]
-            };
-
-            drawSegment(window, edge, obstacleBorder);
-        }
-
-
-        // ---------------------------------
-        // Vertex markers
-        // ---------------------------------
-
-        for(const Point& vertex : obstacle.vertices){
-
-            sf::CircleShape marker(2.5f);
-
-            marker.setOrigin(sf::Vector2f(2.5f, 2.5f));
-
-            marker.setPosition(
-                sf::Vector2f(
-                    static_cast<float>(
-                        vertex.x
-                    ),
-                    static_cast<float>(
-                        vertex.y
-                    )
-                )
-            );
-
-            marker.setFillColor(vertexColor);
-
-            window.draw(marker);
-        }
-    }
+    window.draw(obstacleFillVertices);
+    window.draw(obstacleBorderVertices);
+    window.draw(obstacleMarkerVertices);
 }
 
 void PathlabApp::drawCurrentObstacle(){
@@ -480,80 +421,15 @@ void PathlabApp::drawStartAndGoal(){
 void PathlabApp::drawVisibilityGraph(){
     if(!planningResultAvailable || !showVisibilityGraph) return;
 
-    const sf::Color graphColor{
-        62,
-        68,
-        80
-    };
-
-    drawGraph(window, graph, graphColor);
-
-    const sf::Color nodeColor{
-        118,
-        124,
-        136
-    };
-
-    for(const GraphNode& node : graph.nodes){
-        sf::CircleShape marker(2.5f);
-        marker.setOrigin(sf::Vector2f(2.5f, 2.5f));
-        marker.setPosition(
-            sf::Vector2f(
-                static_cast<float>(node.position.x), 
-                static_cast<float>(node.position.y) 
-            )
-        );
-        marker.setFillColor(nodeColor);
-        window.draw(marker);
-    }
+    window.draw(visibilityGraphVertices);
+    window.draw(visibilityNodeVertices);
 }
 
 void PathlabApp::drawPath(){
     if(!planningResultAvailable) return;
 
-    const sf::Color pathColor{250, 204, 21};
-
-
-    for(std::size_t i = 0; i+1 < result.path.size(); ++i){
-        const std::size_t fromNode = result.path[i];
-        const std::size_t toNode = result.path[i+1];
-
-        const Point& a = graph.nodes[fromNode].position;
-        const Point& b = graph.nodes[toNode].position;
-
-        drawThickSegment(
-            window,
-            a,
-            b,
-            4.0f,
-            pathColor
-        );
-    }
-
-    // ---------------------------------
-    // Path waypoint markers
-    // ---------------------------------
-
-    for(const std::size_t nodeIndex : result.path){
-
-        const Point& point = graph.nodes[nodeIndex].position;
-
-        sf::CircleShape waypoint(3.0f);
-
-        waypoint.setOrigin(sf::Vector2f(3.0f, 3.0f));
-
-        waypoint.setPosition(
-            sf::Vector2f(
-                static_cast<float>(point.x),
-                static_cast<float>(point.y)
-            )
-        );
-
-        waypoint.setFillColor(sf::Color(255, 238, 150));
-
-        window.draw(waypoint);
-    }
-
+    window.draw(pathVertices);
+    window.draw(pathMarkerVertices);
 }
 
 void PathlabApp::runPlanner(){
@@ -582,12 +458,18 @@ void PathlabApp::runPlanner(){
     ).count();
 
     planningResultAvailable = true;
+    rebuildPlanningRenderCache();
 }
 
 void PathlabApp::invalidatePlanningResult(){
     graph.nodes.clear();
     graph.edges.clear();
     result.path.clear();
+
+    visibilityGraphVertices.clear();
+    visibilityNodeVertices.clear();
+    pathVertices.clear();
+    pathMarkerVertices.clear();
 
     graphBuildTimeMs = 0.0;
     searchTimeMs = 0.0;
@@ -665,40 +547,109 @@ void PathlabApp::drawCanvasBackground()
 
     window.draw(background);
 
-    // ---------------------------------
-    // Engineering grid
-    // ---------------------------------
+    window.draw(canvasGridVertices);
+}
 
-    const float gridSpacing = 40.0f;
+void PathlabApp::rebuildCanvasRenderCache(){
+    canvasGridVertices.clear();
 
+    const sf::Vector2u windowSize = window.getSize();
+    const float canvasWidth = static_cast<float>(windowSize.x) - PATHLAB_SIDE_PANEL_WIDTH;
+    const float canvasHeight =
+        static_cast<float>(windowSize.y) - PATHLAB_TOP_BAR_HEIGHT - PATHLAB_BOTTOM_BAR_HEIGHT;
+
+    constexpr float gridSpacing = 40.0f;
     const sf::Color gridColor{30, 33, 40};
 
-
-    sf::VertexArray grid(sf::PrimitiveType::Lines);
-
-
     for(float x = 0.0f; x <= canvasWidth; x += gridSpacing){
-        grid.append(
+        canvasGridVertices.append(
             sf::Vertex{sf::Vector2f(x, PATHLAB_TOP_BAR_HEIGHT), gridColor}
         );
-
-        grid.append(
-            sf::Vertex{sf::Vector2f(x, PATHLAB_TOP_BAR_HEIGHT+ canvasHeight),
-                gridColor
-            }
+        canvasGridVertices.append(
+            sf::Vertex{sf::Vector2f(x, PATHLAB_TOP_BAR_HEIGHT + canvasHeight), gridColor}
         );
     }
 
+    for(float y = PATHLAB_TOP_BAR_HEIGHT;
+        y <= PATHLAB_TOP_BAR_HEIGHT + canvasHeight;
+        y += gridSpacing){
+        canvasGridVertices.append(sf::Vertex{sf::Vector2f(0.0f, y), gridColor});
+        canvasGridVertices.append(sf::Vertex{sf::Vector2f(canvasWidth, y), gridColor});
+    }
+}
 
-    for(float y = PATHLAB_TOP_BAR_HEIGHT; y <= PATHLAB_TOP_BAR_HEIGHT + canvasHeight; y += gridSpacing){
+void PathlabApp::rebuildObstacleRenderCache(){
+    obstacleFillVertices.clear();
+    obstacleBorderVertices.clear();
+    obstacleMarkerVertices.clear();
 
-        grid.append(sf::Vertex{sf::Vector2f(0.0f, y), gridColor});
+    const sf::Color obstacleFill{35, 39, 47};
+    const sf::Color obstacleBorder{112, 119, 132};
+    const sf::Color vertexColor{165, 171, 182};
 
-        grid.append(
-            sf::Vertex{sf::Vector2f(canvasWidth, y), gridColor}
+    for(const Polygon& obstacle : obstacles){
+        const std::size_t vertexCount = obstacle.vertices.size();
+        if(vertexCount < 3) continue;
+
+        for(const Triangle& triangle : triangulatePolygon(obstacle)){
+            appendTriangle(obstacleFillVertices, triangle, obstacleFill);
+        }
+
+        for(std::size_t i = 0; i < vertexCount; ++i){
+            appendLine(
+                obstacleBorderVertices,
+                obstacle.vertices[i],
+                obstacle.vertices[(i + 1) % vertexCount],
+                obstacleBorder
+            );
+        }
+
+        for(const Point& vertex : obstacle.vertices){
+            appendFilledCircle(obstacleMarkerVertices, vertex, 2.5f, vertexColor);
+        }
+    }
+}
+
+void PathlabApp::rebuildPlanningRenderCache(){
+    visibilityGraphVertices.clear();
+    visibilityNodeVertices.clear();
+    pathVertices.clear();
+    pathMarkerVertices.clear();
+
+    const sf::Color graphColor{62, 68, 80};
+    const sf::Color nodeColor{118, 124, 136};
+
+    for(const GraphEdge& edge : graph.edges){
+        appendLine(
+            visibilityGraphVertices,
+            graph.nodes[edge.from].position,
+            graph.nodes[edge.to].position,
+            graphColor
         );
     }
 
+    for(const GraphNode& node : graph.nodes){
+        appendFilledCircle(visibilityNodeVertices, node.position, 2.5f, nodeColor);
+    }
 
-    window.draw(grid);
+    const sf::Color pathColor{250, 204, 21};
+    for(std::size_t i = 0; i + 1 < result.path.size(); ++i){
+        appendThickSegment(
+            pathVertices,
+            graph.nodes[result.path[i]].position,
+            graph.nodes[result.path[i + 1]].position,
+            4.0f,
+            pathColor
+        );
+    }
+
+    const sf::Color pathMarkerColor{255, 238, 150};
+    for(const std::size_t nodeIndex : result.path){
+        appendFilledCircle(
+            pathMarkerVertices,
+            graph.nodes[nodeIndex].position,
+            3.0f,
+            pathMarkerColor
+        );
+    }
 }

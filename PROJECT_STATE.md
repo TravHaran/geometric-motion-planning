@@ -78,6 +78,9 @@ Completed:
 - Interactive environment construction
 - Interactive planner visualization
 - Dijkstra vs A* comparison
+- PATHLAB interactive planning visualizer
+- Cached and batched PATHLAB scene rendering
+- Event-driven, frame-limited PATHLAB application loop
 
 Current demos:
 
@@ -85,6 +88,7 @@ Current demos:
 - `demo_2b` — Dijkstra on a visibility graph
 - `demo_2c` — Interactive Dijkstra planning sandbox
 - `demo_2d` — Interactive Dijkstra / A* comparison
+- `demo_2e` — PATHLAB interactive planning visualizer
 
 Next major milestone:
 
