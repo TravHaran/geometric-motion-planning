@@ -17,6 +17,45 @@ capabilities.
 For detailed implementation status, conventions, and milestones, see
 [PROJECT_STATE.md](PROJECT_STATE.md).
 
+## PATHLAB in action
+
+[![PATHLAB interactive planner showing a visibility graph, a computed path,
+planner metrics, and search playback](assets/media/pathlab-demo-poster.png)](assets/media/pathlab-demo.mov)
+
+*Click the image to watch the PATHLAB screen recording.* The demo shows the
+deterministic comparison scene, visibility graph, planner selection, path and
+expansion metrics, and search playback available in `demo_2e`.
+
+## Why this project?
+
+Moving a humanoid through a working environment is not one planning problem.
+A global planner must reason about where the robot should go, a footstep
+planner must turn that route into discrete contacts, and a controller must
+determine whether the resulting motion can actually be executed. The earlier
+layers need broad search, while the later dynamics and whole-body evaluations
+are much more expensive.
+
+The following external examples motivate that progression. They provide
+real-world and research context; they are **not** outputs of PATHLAB and do not
+represent systems implemented in this repository.
+
+| Real-world motivation | Planning-stack context |
+| --- | --- |
+| [![Agility Robotics' Digit operating in a warehouse](assets/media/digit-warehouse-reference.png)](https://www.agilityrobotics.com/content/digits-next-steps) | [![Reference architecture progressing from a 2D path planner through a path follower to a footstep planner](assets/media/humanoid-planning-stack-reference.png)](https://www.youtube.com/watch?v=VeutCk1xYzI) |
+| **Digit in a warehouse.** Agility Robotics describes navigation in constrained spaces, with payloads, frequent stops, and turns. [View the source article and footage.](https://www.agilityrobotics.com/content/digits-next-steps) | **From global route to dynamically informed steps.** This externally sourced architecture illustrates one decomposition from a 2D planar position-and-orientation (SE(2)) planner to trajectory following and footstep planning. [View the source video.](https://www.youtube.com/watch?v=VeutCk1xYzI) |
+
+The Agility article also includes a simulated comparison of its updated
+footstep planner and describes a minimum-step global path followed by a
+model-predictive controller. That example helps connect global route selection
+to step-level motion, but its architecture and results belong to Agility
+Robotics rather than PATHLAB.
+
+PATHLAB currently develops the transparent computational-geometry and graph
+search foundations at the global-planning end of this progression. The
+long-term research direction asks how a global footstep planner might retain
+that search efficiency while consulting expensive dynamics only when a cheap
+geometric test is uncertain.
+
 ## Research direction
 
 PATHLAB's central research question is:
@@ -191,7 +230,7 @@ build directory with `ctest --output-on-failure`.
 
 | Path | Responsibility |
 | --- | --- |
-| `assets/` | Runtime fonts and the Gaussian backdrop-blur shader |
+| `assets/` | Runtime fonts, the Gaussian backdrop-blur shader, and README media |
 | `src/geometry/` | Geometry types, predicates, collision logic, and polygon triangulation |
 | `src/graph/` | Graph representation and visibility-graph construction |
 | `src/planners/` | BFS, Dijkstra, and A* search implementations |
