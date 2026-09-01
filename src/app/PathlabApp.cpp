@@ -363,6 +363,13 @@ void PathlabApp::handleMousePressed(
 
             return;
 
+        case PathlabUIAction::LoadDemoScene:
+
+            algorithmDropdownOpen = false;
+            loadDemoScene();
+
+            return;
+
         case PathlabUIAction::ResetCamera:
 
             algorithmDropdownOpen = false;
@@ -752,6 +759,44 @@ void PathlabApp::resetScene(){
     inputMode = InputMode::Obstacle;
     rebuildObstacleRenderCache();
     invalidatePlanningResult();
+}
+
+void PathlabApp::loadDemoScene(){
+    resetScene();
+
+    start = Point{70.0, 410.0};
+    goal = Point{830.0, 410.0};
+
+    // Four axis-aligned blocks form a clean rising corridor from start to goal.
+    obstacles = {
+        Polygon{{
+            {185.0, 320.0},
+            {285.0, 320.0},
+            {285.0, 530.0},
+            {185.0, 530.0}
+        }},
+        Polygon{{
+            {345.0, 175.0},
+            {435.0, 175.0},
+            {435.0, 365.0},
+            {345.0, 365.0}
+        }},
+        Polygon{{
+            {505.0, 205.0},
+            {580.0, 205.0},
+            {580.0, 385.0},
+            {505.0, 385.0}
+        }},
+        Polygon{{
+            {665.0, 200.0},
+            {745.0, 200.0},
+            {745.0, 400.0},
+            {665.0, 400.0}
+        }}
+    };
+
+    rebuildObstacleRenderCache();
+    resetCanvasView();
 }
 
 void PathlabApp::render(){

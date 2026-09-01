@@ -63,6 +63,7 @@ and playback controls are operated with the left mouse button.
 | Place or replace the goal | Press `G`, then left-click the canvas |
 | Cancel placement or discard an unfinished obstacle | `Esc` |
 | Open or close Help | Click the top-bar **?** button or press `?` |
+| Load the showcase scene | Click **Load Demo** at the upper-right of the canvas |
 | Select a planner | Choose **Dijkstra** or **A\*** from the Algorithm selector |
 | Run the selected planner | Click **Run Planner** or press `Space` |
 | Reset the complete scene | `R` |
@@ -81,6 +82,11 @@ and playback controls are operated with the left mouse button.
 `Esc` first closes the open Algorithm menu when applicable. PATHLAB does not
 currently provide a separate clear command; `R` removes all obstacles, the
 start and goal, and the current planning result.
+
+**Load Demo** replaces the current scene with a deterministic four-obstacle
+showcase and resets the camera to its default framing. It preserves the selected
+planner and visualization preferences, clears any previous result/playback, and
+does not run the planner automatically.
 
 ## Build and run
 

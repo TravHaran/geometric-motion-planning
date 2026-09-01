@@ -450,6 +450,19 @@ sf::FloatRect getResetCameraButtonBounds(const sf::Vector2u& windowSize){
     );
 }
 
+sf::FloatRect getLoadDemoSceneButtonBounds(const sf::Vector2u& windowSize){
+    const sf::FloatRect resetCameraBounds =
+        getResetCameraButtonBounds(windowSize);
+
+    return sf::FloatRect(
+        sf::Vector2f(
+            resetCameraBounds.position.x - 132.0f,
+            resetCameraBounds.position.y
+        ),
+        sf::Vector2f(124.0f, resetCameraBounds.size.y)
+    );
+}
+
 sf::FloatRect getPlaybackDockBounds(
     const sf::Vector2u& windowSize
 ){
@@ -1716,6 +1729,54 @@ void drawResetCameraButton(
     );
 }
 
+void drawLoadDemoSceneButton(
+    sf::RenderWindow& window,
+    const sf::Font& font
+){
+    const sf::FloatRect bounds =
+        getLoadDemoSceneButtonBounds(window.getSize());
+
+    const sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
+    const bool hovered = containsPoint(bounds, mousePosition);
+    const bool pressed =
+        hovered
+        && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+
+    drawRoundedSurface(
+        window,
+        bounds,
+        CONTROL_RADIUS,
+        getControlFill(hovered, pressed),
+        hovered ? sf::Color(78, 86, 101) : BORDER
+    );
+
+    const sf::Color iconColor = hovered ? ACCENT_HOVER : TEXT_SECONDARY;
+
+    sf::RectangleShape firstObstacle(sf::Vector2f(5.0f, 10.0f));
+    firstObstacle.setPosition(
+        sf::Vector2f(bounds.position.x + 11.0f, bounds.position.y + 11.0f)
+    );
+    firstObstacle.setFillColor(iconColor);
+    window.draw(firstObstacle);
+
+    sf::RectangleShape secondObstacle(sf::Vector2f(5.0f, 7.0f));
+    secondObstacle.setPosition(
+        sf::Vector2f(bounds.position.x + 18.0f, bounds.position.y + 14.0f)
+    );
+    secondObstacle.setFillColor(iconColor);
+    window.draw(secondObstacle);
+
+    drawText(
+        window,
+        font,
+        "LOAD DEMO",
+        bounds.position.x + 34.0f,
+        bounds.position.y + 8.0f,
+        10,
+        hovered ? TEXT_PRIMARY : TEXT_SECONDARY
+    );
+}
+
 // =====================================
 // Sidebar
 // =====================================
@@ -2633,6 +2694,8 @@ void drawHelpOverlay(
     drawHelpControlRow(window, font, "ESC", "Cancel mode or discard draft", contentLeft, leftY);
     leftY += rowSpacing;
     drawHelpControlRow(window, font, "R", "Clear scene and planner result", contentLeft, leftY);
+    leftY += rowSpacing;
+    drawHelpControlRow(window, font, "LOAD DEMO", "Load showcase and reset view", contentLeft, leftY);
     leftY += rowSpacing + sectionGap;
 
     drawHelpSectionHeading(
@@ -2736,6 +2799,8 @@ void drawPathlabUI(
 
     drawResetCameraButton(window, font);
 
+    drawLoadDemoSceneButton(window, font);
+
     if(data.algorithmDropdownOpen){
 
         drawAlgorithmDropdown(
@@ -2766,6 +2831,10 @@ PathlabUIAction handlePathlabUIClick(
 ){
     if(containsPoint(getHelpButtonBounds(windowSize), position)){
         return PathlabUIAction::OpenHelpOverlay;
+    }
+
+    if(containsPoint(getLoadDemoSceneButtonBounds(windowSize), position)){
+        return PathlabUIAction::LoadDemoScene;
     }
 
     if(containsPoint(getResetCameraButtonBounds(windowSize), position)){

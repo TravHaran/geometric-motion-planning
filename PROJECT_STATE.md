@@ -89,6 +89,7 @@ Completed:
   responsive sidebar spacing
 - Contextual screen-space Help / Controls overlay with modal input blocking
 - Contextual control availability and truthful planner-status feedback
+- Deterministic four-obstacle showcase scene for demos and planner comparison
 
 Current demos:
 
