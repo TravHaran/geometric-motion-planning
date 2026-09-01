@@ -1,7 +1,7 @@
 #include "Renderer.hpp"
 
 void drawPoint(
-    sf::RenderWindow& window,
+    sf::RenderTarget& target,
     const Point& point,
     const sf::Color& color
 ){
@@ -16,11 +16,11 @@ void drawPoint(
 
     circle.setFillColor(color);
 
-    window.draw(circle);
+    target.draw(circle);
 }
 
 void drawSegment(
-    sf::RenderWindow& window,
+    sf::RenderTarget& target,
     const Segment& segment,
     const sf::Color& color
 ) {
@@ -41,11 +41,11 @@ void drawSegment(
         }
     }; 
 
-    window.draw(line, 2, sf::PrimitiveType::Lines);
+    target.draw(line, 2, sf::PrimitiveType::Lines);
 }
 
 void drawGraph(
-    sf::RenderWindow& window,
+    sf::RenderTarget& target,
     const Graph& graph,
     const sf::Color& color
 ){
@@ -60,7 +60,7 @@ void drawGraph(
         Segment segment{a, b};
 
         drawSegment(
-            window,
+            target,
             segment,
             color
         );

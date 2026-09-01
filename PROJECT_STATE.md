@@ -89,6 +89,9 @@ Completed:
   responsive sidebar spacing
 - Collapsible planner sidebar with sidebar-aware canvas, camera controls, and
   playback-dock layout
+- Shared quarter-resolution separable Gaussian backdrop blur for selected
+  PATHLAB glass surfaces, with event-driven cache invalidation and a
+  shader-unavailable fallback
 - Contextual screen-space Help / Controls overlay with modal input blocking
 - Contextual control availability and truthful planner-status feedback
 - Deterministic four-obstacle showcase scene for demos and planner comparison
@@ -241,7 +244,8 @@ geometric-motion-planning/
 ├── test.sh
 ├── theory.sh
 ├── assets/
-│   └── fonts/
+│   ├── fonts/
+│   └── shaders/
 ├── docs/
 │   └── theory.md
 ├── theory/

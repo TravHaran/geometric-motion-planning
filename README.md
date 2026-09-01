@@ -50,6 +50,9 @@ path data are cached in batched SFML vertex arrays. Outside active playback,
 the application waits for input instead of continuously redrawing an unchanged
 scene. The planner sidebar can be collapsed to reclaim the full canvas width;
 camera state, planner results, and playback remain intact while it is toggled.
+Selected floating controls, the playback dock, and the sidebar use a restrained
+frosted-glass treatment backed by a shared, downsampled Gaussian blur. The
+effect falls back to translucent surfaces when shaders are unavailable.
 
 ## PATHLAB controls
 
@@ -140,6 +143,7 @@ The mathematical and planning layers remain independent of SFML.
 
 | Path | Responsibility |
 | --- | --- |
+| `assets/` | Runtime fonts and the Gaussian backdrop-blur shader |
 | `src/geometry/` | Geometry types, predicates, collision logic, and polygon triangulation |
 | `src/graph/` | Graph representation and visibility-graph construction |
 | `src/planners/` | Dijkstra and A* search implementations |

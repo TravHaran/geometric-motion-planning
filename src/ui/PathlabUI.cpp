@@ -25,12 +25,6 @@ const sf::Color SURFACE{
     32
 };
 
-const sf::Color PANEL{
-    25,
-    28,
-    34
-};
-
 const sf::Color CONTROL{
     31,
     35,
@@ -190,6 +184,111 @@ void drawRoundedSurface(
     surface.setOutlineColor(outlineColor);
 
     window.draw(surface);
+}
+
+void drawGlassSurface(
+    sf::RenderWindow& window,
+    const sf::FloatRect& bounds,
+    float radius,
+    const PathlabGlassBackdrop& glassBackdrop,
+    const sf::Color& tintColor,
+    const sf::Color& borderColor,
+    bool drawShadow,
+    bool drawTopHighlight = true
+){
+    if(drawShadow){
+        drawRoundedSurface(
+            window,
+            sf::FloatRect(
+                bounds.position + sf::Vector2f(0.0f, 5.0f),
+                bounds.size
+            ),
+            radius,
+            sf::Color(3, 6, 11, 82),
+            sf::Color::Transparent,
+            0.0f
+        );
+    }
+
+    if(
+        glassBackdrop.texture
+        && glassBackdrop.sourceWindowSize.x > 0
+        && glassBackdrop.sourceWindowSize.y > 0
+    ){
+        const sf::Vector2u textureSize =
+            glassBackdrop.texture->getSize();
+
+        const float textureScaleX =
+            static_cast<float>(textureSize.x)
+            / static_cast<float>(glassBackdrop.sourceWindowSize.x);
+
+        const float textureScaleY =
+            static_cast<float>(textureSize.y)
+            / static_cast<float>(glassBackdrop.sourceWindowSize.y);
+
+        const int textureLeft = std::clamp(
+            static_cast<int>(std::floor(bounds.position.x * textureScaleX)),
+            0,
+            static_cast<int>(textureSize.x) - 1
+        );
+
+        const int textureTop = std::clamp(
+            static_cast<int>(std::floor(bounds.position.y * textureScaleY)),
+            0,
+            static_cast<int>(textureSize.y) - 1
+        );
+
+        const int textureWidth = std::clamp(
+            static_cast<int>(std::ceil(bounds.size.x * textureScaleX)),
+            1,
+            static_cast<int>(textureSize.x) - textureLeft
+        );
+
+        const int textureHeight = std::clamp(
+            static_cast<int>(std::ceil(bounds.size.y * textureScaleY)),
+            1,
+            static_cast<int>(textureSize.y) - textureTop
+        );
+
+        sf::ConvexShape blurredSurface =
+            makeRoundedRectangle(bounds, radius);
+
+        blurredSurface.setTexture(glassBackdrop.texture);
+        blurredSurface.setTextureRect(
+            sf::IntRect(
+                sf::Vector2i(textureLeft, textureTop),
+                sf::Vector2i(textureWidth, textureHeight)
+            )
+        );
+        blurredSurface.setFillColor(sf::Color::White);
+        window.draw(blurredSurface);
+    }
+
+    drawRoundedSurface(
+        window,
+        bounds,
+        radius,
+        tintColor,
+        borderColor
+    );
+
+    if(drawTopHighlight && bounds.size.x > radius * 2.0f + 8.0f){
+        sf::RectangleShape highlight(
+            sf::Vector2f(
+                bounds.size.x - radius * 2.0f - 8.0f,
+                1.0f
+            )
+        );
+
+        highlight.setPosition(
+            sf::Vector2f(
+                bounds.position.x + radius + 4.0f,
+                bounds.position.y + 1.0f
+            )
+        );
+        highlight.setFillColor(sf::Color(210, 222, 242, 25));
+        window.draw(highlight);
+    }
 }
 
 sf::Color getControlFill(
@@ -1316,7 +1415,8 @@ void drawPlaybackButton(
 void drawPlaybackDock(
     sf::RenderWindow& window,
     const sf::Font& font,
-    const PathlabUIData& data
+    const PathlabUIData& data,
+    const PathlabGlassBackdrop& glassBackdrop
 ){
     const sf::FloatRect dock =
         getPlaybackDockBounds(
@@ -1325,26 +1425,14 @@ void drawPlaybackDock(
         );
 
 
-    const sf::FloatRect shadowBounds(
-        dock.position + sf::Vector2f(0.0f, 5.0f),
-        dock.size
-    );
-
-    drawRoundedSurface(
-        window,
-        shadowBounds,
-        12.0f,
-        sf::Color(4, 6, 10, 105),
-        sf::Color::Transparent,
-        0.0f
-    );
-
-    drawRoundedSurface(
+    drawGlassSurface(
         window,
         dock,
         12.0f,
-        sf::Color(24, 28, 35, 235),
-        sf::Color(83, 91, 105, 175)
+        glassBackdrop,
+        sf::Color(18, 23, 31, 202),
+        sf::Color(117, 132, 154, 148),
+        true
     );
 
 
@@ -1747,7 +1835,8 @@ void drawTopBar(
 
 void drawSidebarToggleButton(
     sf::RenderWindow& window,
-    bool sidebarVisible
+    bool sidebarVisible,
+    const PathlabGlassBackdrop& glassBackdrop
 ){
     const sf::FloatRect bounds =
         getSidebarToggleButtonBounds(window.getSize());
@@ -1758,12 +1847,20 @@ void drawSidebarToggleButton(
         hovered
         && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
 
-    drawRoundedSurface(
+    const sf::Color tintColor = pressed
+        ? sf::Color(18, 22, 29, 226)
+        : hovered
+            ? sf::Color(34, 41, 52, 210)
+            : sf::Color(22, 27, 35, 194);
+
+    drawGlassSurface(
         window,
         bounds,
         CONTROL_RADIUS,
-        getControlFill(hovered, pressed),
-        hovered ? sf::Color(78, 86, 101) : BORDER
+        glassBackdrop,
+        tintColor,
+        hovered ? sf::Color(114, 132, 158, 180) : sf::Color(82, 94, 113, 145),
+        true
     );
 
     const sf::Color iconColor = hovered ? TEXT_PRIMARY : TEXT_SECONDARY;
@@ -1793,7 +1890,8 @@ void drawSidebarToggleButton(
 void drawResetCameraButton(
     sf::RenderWindow& window,
     const sf::Font& font,
-    bool sidebarVisible
+    bool sidebarVisible,
+    const PathlabGlassBackdrop& glassBackdrop
 ){
     const sf::FloatRect bounds =
         getResetCameraButtonBounds(window.getSize(), sidebarVisible);
@@ -1804,12 +1902,20 @@ void drawResetCameraButton(
         hovered
         && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
 
-    drawRoundedSurface(
+    const sf::Color tintColor = pressed
+        ? sf::Color(18, 22, 29, 226)
+        : hovered
+            ? sf::Color(34, 41, 52, 210)
+            : sf::Color(22, 27, 35, 194);
+
+    drawGlassSurface(
         window,
         bounds,
         CONTROL_RADIUS,
-        getControlFill(hovered, pressed),
-        hovered ? sf::Color(78, 86, 101) : BORDER
+        glassBackdrop,
+        tintColor,
+        hovered ? sf::Color(114, 132, 158, 180) : sf::Color(82, 94, 113, 145),
+        true
     );
 
     sf::RectangleShape viewFrame(sf::Vector2f(13.0f, 10.0f));
@@ -1848,7 +1954,8 @@ void drawResetCameraButton(
 void drawLoadDemoSceneButton(
     sf::RenderWindow& window,
     const sf::Font& font,
-    bool sidebarVisible
+    bool sidebarVisible,
+    const PathlabGlassBackdrop& glassBackdrop
 ){
     const sf::FloatRect bounds =
         getLoadDemoSceneButtonBounds(window.getSize(), sidebarVisible);
@@ -1859,12 +1966,20 @@ void drawLoadDemoSceneButton(
         hovered
         && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
 
-    drawRoundedSurface(
+    const sf::Color tintColor = pressed
+        ? sf::Color(18, 22, 29, 226)
+        : hovered
+            ? sf::Color(34, 41, 52, 210)
+            : sf::Color(22, 27, 35, 194);
+
+    drawGlassSurface(
         window,
         bounds,
         CONTROL_RADIUS,
-        getControlFill(hovered, pressed),
-        hovered ? sf::Color(78, 86, 101) : BORDER
+        glassBackdrop,
+        tintColor,
+        hovered ? sf::Color(114, 132, 158, 180) : sf::Color(82, 94, 113, 145),
+        true
     );
 
     const sf::Color iconColor = hovered ? ACCENT_HOVER : TEXT_SECONDARY;
@@ -1901,7 +2016,8 @@ void drawLoadDemoSceneButton(
 void drawSidePanel(
     sf::RenderWindow& window,
     const sf::Font& font,
-    const PathlabUIData& data
+    const PathlabUIData& data,
+    const PathlabGlassBackdrop& glassBackdrop
 ){
     const sf::Vector2u windowSize =
         window.getSize();
@@ -1959,51 +2075,18 @@ void drawSidePanel(
         compact ? 22.0f : 27.0f;
 
 
-    sf::RectangleShape background(
-        sf::Vector2f(
-            PATHLAB_SIDE_PANEL_WIDTH,
-            panelHeight
-        )
-    );
-
-    background.setPosition(
-        sf::Vector2f(
-            panelX,
-            PATHLAB_TOP_BAR_HEIGHT
-        )
-    );
-
-    background.setFillColor(
-        PANEL
-    );
-
-    window.draw(
-        background
-    );
-
-
-    // Left border separating canvas / panel.
-
-    sf::RectangleShape panelBorder(
-        sf::Vector2f(
-            1.0f,
-            panelHeight
-        )
-    );
-
-    panelBorder.setPosition(
-        sf::Vector2f(
-            panelX,
-            PATHLAB_TOP_BAR_HEIGHT
-        )
-    );
-
-    panelBorder.setFillColor(
-        BORDER
-    );
-
-    window.draw(
-        panelBorder
+    drawGlassSurface(
+        window,
+        sf::FloatRect(
+            sf::Vector2f(panelX, PATHLAB_TOP_BAR_HEIGHT),
+            sf::Vector2f(PATHLAB_SIDE_PANEL_WIDTH, panelHeight)
+        ),
+        0.0f,
+        glassBackdrop,
+        sf::Color(16, 20, 27, 218),
+        sf::Color(91, 105, 126, 135),
+        false,
+        true
     );
 
 
@@ -2908,21 +2991,36 @@ bool loadPathlabFont(sf::Font& font){
 void drawPathlabUI(
     sf::RenderWindow& window, 
     const sf::Font& font,
-    const PathlabUIData& data
+    const PathlabUIData& data,
+    const PathlabGlassBackdrop& glassBackdrop
 ){
     drawTopBar(window, font, data);
 
     if(data.sidebarVisible){
-        drawSidePanel(window, font, data);
+        drawSidePanel(window, font, data, glassBackdrop);
     }
 
     drawBottomBar(window, font);
 
-    drawResetCameraButton(window, font, data.sidebarVisible);
+    drawResetCameraButton(
+        window,
+        font,
+        data.sidebarVisible,
+        glassBackdrop
+    );
 
-    drawLoadDemoSceneButton(window, font, data.sidebarVisible);
+    drawLoadDemoSceneButton(
+        window,
+        font,
+        data.sidebarVisible,
+        glassBackdrop
+    );
 
-    drawSidebarToggleButton(window, data.sidebarVisible);
+    drawSidebarToggleButton(
+        window,
+        data.sidebarVisible,
+        glassBackdrop
+    );
 
     if(data.sidebarVisible && data.algorithmDropdownOpen){
 
@@ -2938,7 +3036,8 @@ void drawPathlabUI(
         drawPlaybackDock(
             window,
             font,
-            data
+            data,
+            glassBackdrop
         );
     }
 

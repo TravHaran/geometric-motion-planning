@@ -93,23 +93,33 @@ class PathlabApp{
         // =====================================
         void render();
 
+        void renderWorld(sf::RenderTarget& target);
+
         PathlabUIData buildUIData() const;
 
-        void drawCanvasBackground();
+        void drawCanvasBackground(sf::RenderTarget& target);
 
-        void drawObstacles();
+        void drawObstacles(sf::RenderTarget& target);
 
-        void drawCurrentObstacle();
+        void drawCurrentObstacle(sf::RenderTarget& target);
 
-        void drawStartAndGoal();
+        void drawStartAndGoal(sf::RenderTarget& target);
 
-        void drawVisibilityGraph();
+        void drawVisibilityGraph(sf::RenderTarget& target);
 
-        void drawExploredNodes();
+        void drawExploredNodes(sf::RenderTarget& target);
 
-        void drawPlaybackHighlights();
+        void drawPlaybackHighlights(sf::RenderTarget& target);
 
-        void drawPath();
+        void drawPath(sf::RenderTarget& target);
+
+        void initializeGlassBackdrop();
+
+        bool resizeGlassRenderTargets();
+
+        void updateGlassBackdrop();
+
+        sf::View getBackdropCanvasView() const;
 
         void rebuildCanvasRenderCache();
 
@@ -145,6 +155,20 @@ class PathlabApp{
         sf::View canvasView;
 
         sf::View uiView;
+
+        sf::RenderTexture sceneRenderTexture;
+
+        sf::RenderTexture blurSourceTexture;
+
+        sf::RenderTexture horizontalBlurTexture;
+
+        sf::RenderTexture verticalBlurTexture;
+
+        sf::Shader gaussianBlurShader;
+
+        bool glassBlurAvailable = false;
+
+        bool worldBackdropDirty = true;
 
         sf::VertexArray canvasBackgroundVertices{sf::PrimitiveType::Triangles};
 

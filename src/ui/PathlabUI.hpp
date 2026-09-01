@@ -75,12 +75,18 @@ struct PathlabUIData{
     std::string playbackSpeed;
 };
 
+struct PathlabGlassBackdrop{
+    const sf::Texture* texture = nullptr;
+    sf::Vector2u sourceWindowSize;
+};
+
 bool loadPathlabFont(sf::Font& font);
 
 void drawPathlabUI(
     sf::RenderWindow& window, 
     const sf::Font& font, 
-    const PathlabUIData& data
+    const PathlabUIData& data,
+    const PathlabGlassBackdrop& glassBackdrop
 );
 
 PathlabUIAction handlePathlabUIClick(

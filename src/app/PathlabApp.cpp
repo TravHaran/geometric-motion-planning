@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cmath>
 #include <algorithm>
+#include <iostream>
 
 namespace{
 
@@ -14,6 +15,7 @@ constexpr float MIN_CANVAS_ZOOM = 0.25f;
 constexpr float MAX_CANVAS_ZOOM = 4.0f;
 constexpr float CANVAS_ZOOM_STEP = 1.15f;
 constexpr float CANVAS_WORLD_HALF_EXTENT = 50000.0f;
+constexpr unsigned int GLASS_BLUR_DOWNSAMPLE = 4;
 
 sf::Vector2f toVector(const Point& point){
     return {
@@ -139,7 +141,7 @@ void appendThickSegment(
 }
 
 void drawEndpointMarker(
-    sf::RenderWindow& window,
+    sf::RenderTarget& target,
     const sf::Font& font,
     const Point& point,
     const std::string& letter,
@@ -165,7 +167,7 @@ void drawEndpointMarker(
 
     outer.setFillColor(sf::Color(color.r, color.g, color.b, 45));
 
-    window.draw(outer);
+    target.draw(outer);
 
 
     // ---------------------------------
@@ -185,7 +187,7 @@ void drawEndpointMarker(
 
     marker.setFillColor(color);
 
-    window.draw(marker);
+    target.draw(marker);
 
 
     // ---------------------------------
@@ -211,7 +213,7 @@ void drawEndpointMarker(
         )
     );
 
-    window.draw(markerText);
+    target.draw(markerText);
 
     // ---------------------------------
     // Label
@@ -232,7 +234,7 @@ void drawEndpointMarker(
         )
     );
 
-    window.draw(labelText);
+    target.draw(labelText);
 }
 
 }
@@ -250,6 +252,10 @@ PathlabApp::PathlabApp() : window(
     updatePlaybackInterval();
 
     if(!loadPathlabFont(uiFont)) window.close();
+
+    if(window.isOpen()){
+        initializeGlassBackdrop();
+    }
 }
 
 void PathlabApp::run(){
@@ -300,6 +306,14 @@ void PathlabApp::processEvent(const sf::Event& event){
 
     if(event.is<sf::Event::Resized>()){
         updateViewLayout();
+
+        if(glassBlurAvailable && !resizeGlassRenderTargets()){
+            glassBlurAvailable = false;
+
+            std::cerr
+                << "PATHLAB glass blur disabled after render-target resize failure."
+                << std::endl;
+        }
     }
 
     if(const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()){
@@ -401,6 +415,8 @@ void PathlabApp::handleMousePressed(
             showObstacles =
                 !showObstacles;
 
+            worldBackdropDirty = true;
+
             return;
 
 
@@ -411,6 +427,8 @@ void PathlabApp::handleMousePressed(
 
             showVisibilityGraph =
                 !showVisibilityGraph;
+
+            worldBackdropDirty = true;
 
             return;
 
@@ -423,6 +441,8 @@ void PathlabApp::handleMousePressed(
             showFinalPath =
                 !showFinalPath;
 
+            worldBackdropDirty = true;
+
             return;
 
 
@@ -433,6 +453,8 @@ void PathlabApp::handleMousePressed(
 
             showExploredNodes =
                 !showExploredNodes;
+
+            worldBackdropDirty = true;
 
             return;
 
@@ -594,6 +616,7 @@ void PathlabApp::handleMousePressed(
 
     if(inputMode == InputMode::Obstacle){
         currentObstacleVertices.push_back(clickedPoint);
+        worldBackdropDirty = true;
     } else if(inputMode == InputMode::Start){
         start = clickedPoint;
         invalidatePlanningResult();
@@ -641,6 +664,7 @@ void PathlabApp::handleMouseMoved(
 
     canvasView.move(previousWorldPosition - currentWorldPosition);
     lastPanPixel = event.position;
+    worldBackdropDirty = true;
 }
 
 void PathlabApp::handleMouseWheelScrolled(
@@ -745,6 +769,7 @@ void PathlabApp::handleKeyPressed(
             inputMode = InputMode::Obstacle;
         } else {
             currentObstacleVertices.clear();
+            worldBackdropDirty = true;
         }
     }
     // Reset scene
@@ -755,6 +780,7 @@ void PathlabApp::handleKeyPressed(
     else if(event.code == sf::Keyboard::Key::V){
         if(planningResultAvailable && !graph.nodes.empty()){
             showVisibilityGraph = !showVisibilityGraph;
+            worldBackdropDirty = true;
         }
     }
     // Run planner
@@ -815,44 +841,63 @@ void PathlabApp::loadDemoScene(){
 void PathlabApp::render(){
     window.clear(sf::Color(18, 20, 24));
 
-    window.setView(canvasView);
+    PathlabGlassBackdrop glassBackdrop;
 
-    drawCanvasBackground();
+    if(glassBlurAvailable){
+        if(worldBackdropDirty){
+            updateGlassBackdrop();
+        }
 
-    drawVisibilityGraph();
+        window.setView(uiView);
 
-    drawObstacles();
+        sf::Sprite sceneSprite(sceneRenderTexture.getTexture());
+        window.draw(sceneSprite);
 
-    drawExploredNodes();
-
-    drawPlaybackHighlights();
-
-    drawPath();
-
-    drawCurrentObstacle();
-
-    drawStartAndGoal();
+        glassBackdrop.texture = &verticalBlurTexture.getTexture();
+        glassBackdrop.sourceWindowSize = window.getSize();
+    } else{
+        window.setView(canvasView);
+        renderWorld(window);
+    }
 
     window.setView(uiView);
 
     const PathlabUIData uiData = buildUIData();
 
-    drawPathlabUI(window, uiFont, uiData);
+    drawPathlabUI(window, uiFont, uiData, glassBackdrop);
 
     window.display();
 }
 
-void PathlabApp::drawObstacles(){
+void PathlabApp::renderWorld(sf::RenderTarget& target){
+    drawCanvasBackground(target);
+
+    drawVisibilityGraph(target);
+
+    drawObstacles(target);
+
+    drawExploredNodes(target);
+
+    drawPlaybackHighlights(target);
+
+    drawPath(target);
+
+    drawCurrentObstacle(target);
+
+    drawStartAndGoal(target);
+}
+
+void PathlabApp::drawObstacles(sf::RenderTarget& target){
     if(!showObstacles){
         return;
     }
 
-    window.draw(obstacleFillVertices);
-    window.draw(obstacleBorderVertices);
-    window.draw(obstacleMarkerVertices);
+    target.draw(obstacleFillVertices);
+    target.draw(obstacleBorderVertices);
+    target.draw(obstacleMarkerVertices);
 }
 
-void PathlabApp::drawCurrentObstacle(){
+void PathlabApp::drawCurrentObstacle(sf::RenderTarget& target){
     // draw edges already entered
     for(std::size_t i = 0; i +1 < currentObstacleVertices.size(); ++i){
         Segment edge{
@@ -860,18 +905,18 @@ void PathlabApp::drawCurrentObstacle(){
             currentObstacleVertices[i+1]
         };
 
-        drawSegment(window, edge, sf::Color::White);
+        drawSegment(target, edge, sf::Color::White);
     }
     // draw obstacle vertices
     for(const Point& vertex : currentObstacleVertices){
-        drawPoint(window, vertex, sf::Color::White);
+        drawPoint(target, vertex, sf::Color::White);
     }
 }
 
-void PathlabApp::drawStartAndGoal(){
+void PathlabApp::drawStartAndGoal(sf::RenderTarget& target){
     if(start.has_value()){
         drawEndpointMarker(
-            window,
+            target,
             uiFont,
             *start,
             "S",
@@ -886,7 +931,7 @@ void PathlabApp::drawStartAndGoal(){
 
     if(goal.has_value()){
         drawEndpointMarker(
-            window,
+            target,
             uiFont,
             *goal,
             "G",
@@ -900,14 +945,14 @@ void PathlabApp::drawStartAndGoal(){
     }
 }
 
-void PathlabApp::drawVisibilityGraph(){
+void PathlabApp::drawVisibilityGraph(sf::RenderTarget& target){
     if(!planningResultAvailable || !showVisibilityGraph) return;
 
-    window.draw(visibilityGraphVertices);
-    window.draw(visibilityNodeVertices);
+    target.draw(visibilityGraphVertices);
+    target.draw(visibilityNodeVertices);
 }
 
-void PathlabApp::drawExploredNodes(){
+void PathlabApp::drawExploredNodes(sf::RenderTarget& target){
 
     if(
         !planningResultAvailable
@@ -917,24 +962,24 @@ void PathlabApp::drawExploredNodes(){
         return;
     }
 
-    window.draw(
+    target.draw(
         exploredNodeVertices
     );
 }
 
-void PathlabApp::drawPlaybackHighlights(){
+void PathlabApp::drawPlaybackHighlights(sf::RenderTarget& target){
     if(!planningResultAvailable || !playbackActive){
         return;
     }
 
     if(showExploredNodes){
-        window.draw(currentExpandedNodeVertices);
+        target.draw(currentExpandedNodeVertices);
     }
 
-    window.draw(goalReachedVertices);
+    target.draw(goalReachedVertices);
 }
 
-void PathlabApp::drawPath(){
+void PathlabApp::drawPath(sf::RenderTarget& target){
     if(!planningResultAvailable || !showFinalPath) return;
 
     if(
@@ -945,8 +990,8 @@ void PathlabApp::drawPath(){
         return;
     }
 
-    window.draw(pathVertices);
-    window.draw(pathMarkerVertices);
+    target.draw(pathVertices);
+    target.draw(pathMarkerVertices);
 }
 
 bool PathlabApp::canRunPlanner() const {
@@ -1028,6 +1073,8 @@ void PathlabApp::runPlanner(){
 }
 
 void PathlabApp::invalidatePlanningResult(){
+    worldBackdropDirty = true;
+
     graph.nodes.clear();
     graph.edges.clear();
 
@@ -1181,10 +1228,10 @@ PathlabUIData PathlabApp::buildUIData() const
     return data;
 }
 
-void PathlabApp::drawCanvasBackground()
+void PathlabApp::drawCanvasBackground(sf::RenderTarget& target)
 {
-    window.draw(canvasBackgroundVertices);
-    window.draw(canvasGridVertices);
+    target.draw(canvasBackgroundVertices);
+    target.draw(canvasGridVertices);
 }
 
 void PathlabApp::rebuildCanvasRenderCache(){
@@ -1241,6 +1288,184 @@ void PathlabApp::rebuildCanvasRenderCache(){
 
 void PathlabApp::initializeViews(){
     resetCanvasView();
+}
+
+void PathlabApp::initializeGlassBackdrop(){
+    if(!sf::Shader::isAvailable()){
+        std::cerr
+            << "PATHLAB glass blur unavailable: shaders are not supported."
+            << std::endl;
+
+        return;
+    }
+
+    if(!gaussianBlurShader.loadFromFile(
+        "assets/shaders/gaussian_blur.frag",
+        sf::Shader::Type::Fragment
+    )){
+        std::cerr
+            << "PATHLAB glass blur unavailable: blur shader could not be loaded."
+            << std::endl;
+
+        return;
+    }
+
+    gaussianBlurShader.setUniform(
+        "source",
+        sf::Shader::CurrentTexture
+    );
+
+    if(!resizeGlassRenderTargets()){
+        std::cerr
+            << "PATHLAB glass blur unavailable: render targets could not be created."
+            << std::endl;
+
+        return;
+    }
+
+    glassBlurAvailable = true;
+    worldBackdropDirty = true;
+}
+
+bool PathlabApp::resizeGlassRenderTargets(){
+    const sf::Vector2u windowSize = window.getSize();
+
+    const sf::Vector2u blurSize{
+        std::max(
+            1u,
+            (windowSize.x + GLASS_BLUR_DOWNSAMPLE - 1)
+                / GLASS_BLUR_DOWNSAMPLE
+        ),
+        std::max(
+            1u,
+            (windowSize.y + GLASS_BLUR_DOWNSAMPLE - 1)
+                / GLASS_BLUR_DOWNSAMPLE
+        )
+    };
+
+    const bool sceneReady = sceneRenderTexture.resize(windowSize);
+    const bool sourceReady = blurSourceTexture.resize(blurSize);
+    const bool horizontalReady = horizontalBlurTexture.resize(blurSize);
+    const bool verticalReady = verticalBlurTexture.resize(blurSize);
+
+    if(!sceneReady || !sourceReady || !horizontalReady || !verticalReady){
+        return false;
+    }
+
+    sceneRenderTexture.setSmooth(true);
+    blurSourceTexture.setSmooth(true);
+    horizontalBlurTexture.setSmooth(true);
+    verticalBlurTexture.setSmooth(true);
+
+    worldBackdropDirty = true;
+
+    return true;
+}
+
+sf::View PathlabApp::getBackdropCanvasView() const {
+    const sf::Vector2u windowSize = window.getSize();
+
+    const float windowWidth =
+        std::max(1.0f, static_cast<float>(windowSize.x));
+
+    const float windowHeight =
+        std::max(1.0f, static_cast<float>(windowSize.y));
+
+    const float canvasHeight = std::max(
+        1.0f,
+        windowHeight
+            - PATHLAB_TOP_BAR_HEIGHT
+            - PATHLAB_BOTTOM_BAR_HEIGHT
+    );
+
+    const float leftWorldEdge =
+        canvasView.getCenter().x - canvasView.getSize().x / 2.0f;
+
+    sf::View backdropView = canvasView;
+
+    backdropView.setSize(
+        sf::Vector2f(
+            windowWidth / canvasZoom,
+            canvasHeight / canvasZoom
+        )
+    );
+
+    backdropView.setCenter(
+        sf::Vector2f(
+            leftWorldEdge + windowWidth / (2.0f * canvasZoom),
+            canvasView.getCenter().y
+        )
+    );
+
+    backdropView.setViewport(
+        sf::FloatRect(
+            sf::Vector2f(
+                0.0f,
+                PATHLAB_TOP_BAR_HEIGHT / windowHeight
+            ),
+            sf::Vector2f(
+                1.0f,
+                canvasHeight / windowHeight
+            )
+        )
+    );
+
+    return backdropView;
+}
+
+void PathlabApp::updateGlassBackdrop(){
+    const sf::Vector2u windowSize = window.getSize();
+    const sf::Vector2u blurSize = blurSourceTexture.getSize();
+
+    sceneRenderTexture.clear(sf::Color(18, 20, 24));
+    sceneRenderTexture.setView(getBackdropCanvasView());
+    renderWorld(sceneRenderTexture);
+    sceneRenderTexture.display();
+
+    blurSourceTexture.clear(sf::Color(18, 20, 24));
+    blurSourceTexture.setView(blurSourceTexture.getDefaultView());
+
+    sf::Sprite sceneSprite(sceneRenderTexture.getTexture());
+    sceneSprite.setScale(
+        sf::Vector2f(
+            static_cast<float>(blurSize.x)
+                / static_cast<float>(windowSize.x),
+            static_cast<float>(blurSize.y)
+                / static_cast<float>(windowSize.y)
+        )
+    );
+
+    blurSourceTexture.draw(sceneSprite);
+    blurSourceTexture.display();
+
+    horizontalBlurTexture.clear(sf::Color(18, 20, 24));
+    horizontalBlurTexture.setView(horizontalBlurTexture.getDefaultView());
+
+    gaussianBlurShader.setUniform(
+        "texelStep",
+        sf::Glsl::Vec2(1.0f / static_cast<float>(blurSize.x), 0.0f)
+    );
+
+    sf::RenderStates blurStates;
+    blurStates.shader = &gaussianBlurShader;
+
+    sf::Sprite horizontalSprite(blurSourceTexture.getTexture());
+    horizontalBlurTexture.draw(horizontalSprite, blurStates);
+    horizontalBlurTexture.display();
+
+    verticalBlurTexture.clear(sf::Color(18, 20, 24));
+    verticalBlurTexture.setView(verticalBlurTexture.getDefaultView());
+
+    gaussianBlurShader.setUniform(
+        "texelStep",
+        sf::Glsl::Vec2(0.0f, 1.0f / static_cast<float>(blurSize.y))
+    );
+
+    sf::Sprite verticalSprite(horizontalBlurTexture.getTexture());
+    verticalBlurTexture.draw(verticalSprite, blurStates);
+    verticalBlurTexture.display();
+
+    worldBackdropDirty = false;
 }
 
 void PathlabApp::resetCanvasView(){
@@ -1342,9 +1567,13 @@ void PathlabApp::updateViewLayout(){
             )
         )
     );
+
+    worldBackdropDirty = true;
 }
 
 void PathlabApp::rebuildObstacleRenderCache(){
+    worldBackdropDirty = true;
+
     obstacleFillVertices.clear();
     obstacleBorderVertices.clear();
     obstacleMarkerVertices.clear();
@@ -1377,6 +1606,8 @@ void PathlabApp::rebuildObstacleRenderCache(){
 }
 
 void PathlabApp::rebuildPlanningRenderCache(){
+    worldBackdropDirty = true;
+
     visibilityGraphVertices.clear();
     visibilityNodeVertices.clear();
     exploredNodeVertices.clear();
@@ -1425,6 +1656,8 @@ void PathlabApp::rebuildPlanningRenderCache(){
 }
 
 void PathlabApp::rebuildExploredNodeRenderCache(){
+    worldBackdropDirty = true;
+
 
     exploredNodeVertices.clear();
 
@@ -1461,6 +1694,8 @@ void PathlabApp::rebuildExploredNodeRenderCache(){
 }
 
 void PathlabApp::rebuildPlaybackHighlightCache(){
+    worldBackdropDirty = true;
+
     currentExpandedNodeVertices.clear();
     goalReachedVertices.clear();
 

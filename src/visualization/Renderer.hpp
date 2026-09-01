@@ -6,19 +6,19 @@
 #include "../graph/Graph.hpp"
 
 void drawPoint(
-    sf::RenderWindow& window,
+    sf::RenderTarget& target,
     const Point& point,
     const sf::Color& color = sf::Color::White
 );
 
 void drawSegment(
-    sf::RenderWindow& window,
+    sf::RenderTarget& target,
     const Segment& segment,
     const sf::Color& color = sf::Color::White
 );
 
 void drawGraph(
-    sf::RenderWindow& window,
+    sf::RenderTarget& target,
     const Graph& graph,
     const sf::Color& color = sf::Color::White
 );
