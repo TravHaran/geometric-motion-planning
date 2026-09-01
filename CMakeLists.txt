@@ -246,6 +246,8 @@ add_executable(
 
     src/planners/Dijkstra.cpp
 
+    src/planners/AStar.cpp
+
     src/visualization/Renderer.cpp
 
     src/ui/PathlabUI.cpp

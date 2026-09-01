@@ -13,11 +13,18 @@ enum class PathlabUIAction{
     RunPlanner,
     ToggleObstacles,
     ToggleVisibilityGraph,
-    ToggleFinalPath
+    ToggleFinalPath,
+    ToggleAlgorithmDropdown,
+    SelectDijkstra,
+    SelectAStar,
+    CloseAlgorithmDropdown
 };
 
 struct PathlabUIData{
     std::string algorithm;
+
+    bool algorithmDropdownOpen = false;
+
     std::string plannerStatus;
 
     std::size_t obstacleCount = 0;
@@ -27,6 +34,7 @@ struct PathlabUIData{
     double pathLength = 0.0;
     std::size_t pathSegments = 0;
     std::size_t pathNodes = 0;
+    std::size_t nodesExpanded = 0;
 
     double graphBuildTimeMs = 0.0;
     double searchTimeMs = 0.0;
@@ -47,5 +55,6 @@ void drawPathlabUI(
 
 PathlabUIAction handlePathlabUIClick(
     const sf::Vector2i& position,
-    const sf::Vector2u& windowSize
+    const sf::Vector2u& windowSize,
+    bool algorithmDropdownOpen
 );

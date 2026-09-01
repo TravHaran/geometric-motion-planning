@@ -272,17 +272,28 @@ void PathlabApp::handleMousePressed(
     // =====================================
 
     const PathlabUIAction uiAction =
-        handlePathlabUIClick(event.position, window.getSize());
+        handlePathlabUIClick(
+            event.position,
+            window.getSize(),
+            algorithmDropdownOpen
+        );
 
     switch(uiAction){
 
         case PathlabUIAction::RunPlanner:
 
+            algorithmDropdownOpen =
+                false;
+
             runPlanner();
+
             return;
 
 
         case PathlabUIAction::ToggleObstacles:
+
+            algorithmDropdownOpen =
+                false;
 
             showObstacles =
                 !showObstacles;
@@ -292,6 +303,9 @@ void PathlabApp::handleMousePressed(
 
         case PathlabUIAction::ToggleVisibilityGraph:
 
+            algorithmDropdownOpen =
+                false;
+
             showVisibilityGraph =
                 !showVisibilityGraph;
 
@@ -300,8 +314,63 @@ void PathlabApp::handleMousePressed(
 
         case PathlabUIAction::ToggleFinalPath:
 
+            algorithmDropdownOpen =
+                false;
+
             showFinalPath =
                 !showFinalPath;
+
+            return;
+
+
+        case PathlabUIAction::ToggleAlgorithmDropdown:
+
+            algorithmDropdownOpen =
+                !algorithmDropdownOpen;
+
+            return;
+
+
+        case PathlabUIAction::SelectDijkstra:
+
+            algorithmDropdownOpen =
+                false;
+
+
+            if(selectedPlanner !=
+            PlannerType::Dijkstra){
+
+                selectedPlanner =
+                    PlannerType::Dijkstra;
+
+                invalidatePlanningResult();
+            }
+
+            return;
+
+
+        case PathlabUIAction::SelectAStar:
+
+            algorithmDropdownOpen =
+                false;
+
+
+            if(selectedPlanner !=
+            PlannerType::AStar){
+
+                selectedPlanner =
+                    PlannerType::AStar;
+
+                invalidatePlanningResult();
+            }
+
+            return;
+
+
+        case PathlabUIAction::CloseAlgorithmDropdown:
+
+            algorithmDropdownOpen =
+                false;
 
             return;
 
@@ -340,6 +409,13 @@ void PathlabApp::handleMousePressed(
 void PathlabApp::handleKeyPressed(
     const sf::Event::KeyPressed& event
 ){
+    if(
+        event.code == sf::Keyboard::Key::Escape && algorithmDropdownOpen
+    ){
+        algorithmDropdownOpen = false;
+
+        return;
+    }
     // Finalize obstacle
     if(event.code == sf::Keyboard::Key::Enter){
         if(currentObstacleVertices.size()>=3){
@@ -380,6 +456,7 @@ void PathlabApp::handleKeyPressed(
     else if(event.code == sf::Keyboard::Key::Space){
         runPlanner();
     }
+
 }
 
 void PathlabApp::resetScene(){
@@ -503,7 +580,39 @@ void PathlabApp::runPlanner(){
     // run shortest-path search
     const auto searchStart = std::chrono::steady_clock::now();
 
-    result = dijkstra(graph, 0, 1);
+    if(selectedPlanner == PlannerType::Dijkstra){
+        const DijkstraResult plannerResult =
+            dijkstra(
+                graph,
+                0,
+                1
+            );
+
+        result.distance =
+            plannerResult.distance;
+
+        result.path =
+            plannerResult.path;
+
+        result.expandedNodes =
+            plannerResult.expandedNodes;
+    } else{
+        const AStarResult plannerResult =
+            aStar(
+                graph,
+                0,
+                1
+            );
+
+        result.distance =
+            plannerResult.distance;
+
+        result.path =
+            plannerResult.path;
+
+        result.expandedNodes =
+            plannerResult.expandedNodes;
+    }
 
     const auto searchEnd = std::chrono::steady_clock::now();
 
@@ -547,7 +656,13 @@ PathlabUIData PathlabApp::buildUIData() const
 {
     PathlabUIData data;
 
-    data.algorithm = "Dijkstra";
+    if(selectedPlanner == PlannerType::Dijkstra){
+        data.algorithm = "Dijkstra";
+    } else{
+        data.algorithm = "A*";
+    }
+
+    data.algorithmDropdownOpen = algorithmDropdownOpen;
 
     if(!planningResultAvailable){
         data.plannerStatus = "Not Run";
@@ -571,6 +686,8 @@ PathlabUIData PathlabApp::buildUIData() const
         data.pathNodes = result.path.size();
         data.pathSegments = result.path.size() - 1;
     }
+
+    data.nodesExpanded = planningResultAvailable ? result.expandedNodes : 0;
 
     data.graphBuildTimeMs = graphBuildTimeMs;
     data.searchTimeMs = searchTimeMs;

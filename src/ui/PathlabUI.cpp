@@ -35,6 +35,12 @@ const sf::Color CONTROL{
     43
 };
 
+const sf::Color CONTROL_HOVER{
+    38,
+    43,
+    52
+};
+
 const sf::Color BORDER{
     48,
     53,
@@ -243,6 +249,71 @@ sf::FloatRect getVisualizationRowBounds(
     );
 }
 
+sf::FloatRect getAlgorithmSelectorBounds(
+    const sf::Vector2u& windowSize
+){
+    const float windowWidth =
+        static_cast<float>(
+            windowSize.x
+        );
+
+    const float panelX =
+        windowWidth
+        - PATHLAB_SIDE_PANEL_WIDTH;
+
+
+    constexpr float selectorY =
+        PATHLAB_TOP_BAR_HEIGHT
+        + 58.0f;
+
+
+    return sf::FloatRect(
+        sf::Vector2f(
+            panelX + 20.0f,
+            selectorY
+        ),
+        sf::Vector2f(
+            PATHLAB_SIDE_PANEL_WIDTH
+                - 40.0f,
+
+            32.0f
+        )
+    );
+}
+
+
+sf::FloatRect getAlgorithmOptionBounds(
+    const sf::Vector2u& windowSize,
+    std::size_t optionIndex
+){
+    const sf::FloatRect selectorBounds =
+        getAlgorithmSelectorBounds(
+            windowSize
+        );
+
+
+    constexpr float optionHeight =
+        32.0f;
+
+
+    return sf::FloatRect(
+        sf::Vector2f(
+            selectorBounds.position.x,
+
+            selectorBounds.position.y
+                + selectorBounds.size.y
+                + optionHeight
+                    * static_cast<float>(
+                        optionIndex
+                    )
+        ),
+        sf::Vector2f(
+            selectorBounds.size.x,
+            optionHeight
+        )
+    );
+}
+
 bool containsPoint(const sf::FloatRect& bounds, const sf::Vector2i& position){
     const float x = static_cast<float>(position.x);
 
@@ -425,6 +496,7 @@ void drawAlgorithmSelector(
     sf::RenderWindow& window,
     const sf::Font& font,
     const std::string& algorithm,
+    bool dropdownOpen,
     float panelX,
     float y
 ){
@@ -439,28 +511,37 @@ void drawAlgorithmSelector(
     );
 
 
-    const float selectorY =
-        y + 21.0f;
+    const sf::FloatRect bounds =
+        getAlgorithmSelectorBounds(
+            window.getSize()
+        );
+
+
+    const sf::Vector2i mousePosition =
+        sf::Mouse::getPosition(
+            window
+        );
+
+
+    const bool hovered =
+        containsPoint(
+            bounds,
+            mousePosition
+        );
 
 
     sf::RectangleShape selector(
-        sf::Vector2f(
-            PATHLAB_SIDE_PANEL_WIDTH
-                - 40.0f,
-
-            32.0f
-        )
+        bounds.size
     );
 
     selector.setPosition(
-        sf::Vector2f(
-            panelX + 20.0f,
-            selectorY
-        )
+        bounds.position
     );
 
     selector.setFillColor(
-        CONTROL
+        hovered
+            ? CONTROL_HOVER
+            : CONTROL
     );
 
     selector.setOutlineThickness(
@@ -468,8 +549,11 @@ void drawAlgorithmSelector(
     );
 
     selector.setOutlineColor(
-        BORDER
+        dropdownOpen
+            ? ACCENT
+            : BORDER
     );
+
 
     window.draw(
         selector
@@ -480,8 +564,8 @@ void drawAlgorithmSelector(
         window,
         font,
         algorithm,
-        panelX + 31.0f,
-        selectorY + 7.0f,
+        bounds.position.x + 11.0f,
+        bounds.position.y + 7.0f,
         12,
         TEXT_PRIMARY
     );
@@ -490,14 +574,93 @@ void drawAlgorithmSelector(
     drawText(
         window,
         font,
-        "v",
-        panelX
-            + PATHLAB_SIDE_PANEL_WIDTH
-            - 40.0f,
-        selectorY + 6.0f,
+        dropdownOpen ? "^" : "v",
+        bounds.position.x
+            + bounds.size.x
+            - 20.0f,
+        bounds.position.y + 6.0f,
         11,
         TEXT_SECONDARY
     );
+}
+
+void drawAlgorithmDropdown(
+    sf::RenderWindow& window,
+    const sf::Font& font,
+    const std::string& selectedAlgorithm
+){
+    const sf::Vector2i mousePosition =
+        sf::Mouse::getPosition(
+            window
+        );
+
+
+    const std::string options[2] = {
+        "Dijkstra",
+        "A*"
+    };
+
+
+    for(std::size_t i = 0; i < 2; ++i){
+
+        const sf::FloatRect bounds =
+            getAlgorithmOptionBounds(
+                window.getSize(),
+                i
+            );
+
+
+        const bool hovered =
+            containsPoint(
+                bounds,
+                mousePosition
+            );
+
+
+        sf::RectangleShape option(
+            bounds.size
+        );
+
+        option.setPosition(
+            bounds.position
+        );
+
+        option.setFillColor(
+            hovered
+                ? CONTROL_HOVER
+                : CONTROL
+        );
+
+        option.setOutlineThickness(
+            1.0f
+        );
+
+        option.setOutlineColor(
+            BORDER
+        );
+
+
+        window.draw(
+            option
+        );
+
+
+        const sf::Color textColor =
+            options[i] == selectedAlgorithm
+                ? ACCENT
+                : TEXT_PRIMARY;
+
+
+        drawText(
+            window,
+            font,
+            options[i],
+            bounds.position.x + 11.0f,
+            bounds.position.y + 7.0f,
+            12,
+            textColor
+        );
+    }
 }
 
 // =====================================
@@ -749,6 +912,7 @@ void drawSidePanel(
         window,
         font,
         data.algorithm,
+        data.algorithmDropdownOpen,
         panelX,
         y
     );
@@ -984,6 +1148,20 @@ void drawSidePanel(
         "Nodes in Path",
         std::to_string(
             data.pathNodes
+        ),
+        panelX,
+        y
+    );
+
+    y += 21.0f;
+
+
+    drawValueRow(
+        window,
+        font,
+        "Nodes Expanded",
+        std::to_string(
+            data.nodesExpanded
         ),
         panelX,
         y
@@ -1308,13 +1486,79 @@ void drawPathlabUI(
 
     drawSidePanel(window, font, data);
 
+    if(data.algorithmDropdownOpen){
+
+        drawAlgorithmDropdown(
+            window,
+            font,
+            data.algorithm
+        );
+    }
+
     drawBottomBar(window, font);
 }
 
 PathlabUIAction handlePathlabUIClick(
     const sf::Vector2i& position,
-    const sf::Vector2u& windowSize
+    const sf::Vector2u& windowSize,
+    bool algorithmDropdownOpen
 ){
+    const sf::FloatRect selectorBounds =
+        getAlgorithmSelectorBounds(
+            windowSize
+        );
+
+    // =====================================
+    // Open dropdown options
+    // =====================================
+
+    if(algorithmDropdownOpen){
+
+        const sf::FloatRect dijkstraBounds =
+            getAlgorithmOptionBounds(
+                windowSize,
+                0
+            );
+
+        if(containsPoint(
+            dijkstraBounds,
+            position
+        )){
+            return
+                PathlabUIAction::SelectDijkstra;
+        }
+
+        const sf::FloatRect aStarBounds =
+            getAlgorithmOptionBounds(
+                windowSize,
+                1
+            );
+
+        if(containsPoint(
+            aStarBounds,
+            position
+        )){
+            return
+                PathlabUIAction::SelectAStar;
+        }
+    }
+
+    // =====================================
+    // Algorithm selector
+    // =====================================
+
+    if(containsPoint(
+        selectorBounds,
+        position
+    )){
+        return
+            PathlabUIAction::ToggleAlgorithmDropdown;
+    }
+
+    // =====================================
+    // Run planner
+    // =====================================
+
     const sf::FloatRect runPlannerBounds =
         getRunPlannerButtonBounds(
             windowSize
@@ -1327,6 +1571,10 @@ PathlabUIAction handlePathlabUIClick(
         return
             PathlabUIAction::RunPlanner;
     }
+
+    // =====================================
+    // Visualization rows
+    // =====================================
 
     const sf::FloatRect obstaclesBounds =
         getVisualizationRowBounds(
@@ -1356,13 +1604,11 @@ PathlabUIAction handlePathlabUIClick(
             PathlabUIAction::ToggleVisibilityGraph;
     }
 
-
     const sf::FloatRect finalPathBounds =
         getVisualizationRowBounds(
             windowSize,
             2
         );
-
 
     if(containsPoint(
         finalPathBounds,
@@ -1372,6 +1618,14 @@ PathlabUIAction handlePathlabUIClick(
             PathlabUIAction::ToggleFinalPath;
     }
 
+    // Clicking anywhere else closes
+    // an open dropdown.
+
+    if(algorithmDropdownOpen){
+
+        return
+            PathlabUIAction::CloseAlgorithmDropdown;
+    }
 
     return
         PathlabUIAction::None;

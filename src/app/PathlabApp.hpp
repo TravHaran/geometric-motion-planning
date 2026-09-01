@@ -10,6 +10,7 @@
 #include "../geometry/Segment.hpp"
 #include "../graph/VisibilityGraph.hpp"
 #include "../planners/Dijkstra.hpp"
+#include "../planners/AStar.hpp"
 #include "../ui/PathlabUI.hpp"
 
 /**
@@ -27,6 +28,11 @@ enum class InputMode{
     Obstacle,
     Start, 
     Goal
+};
+
+enum class PlannerType{
+    Dijkstra,
+    AStar
 };
 
 class PathlabApp{
@@ -126,9 +132,19 @@ class PathlabApp{
         // =====================================
         // Planning state
         // =====================================
+        struct PlanningResult{
+            double distance = 0.0;
+            std::vector<std::size_t> path;
+            std::size_t expandedNodes = 0;
+        };
+
         Graph graph;
 
-        DijkstraResult result;
+        PlanningResult result;
+
+        PlannerType selectedPlanner = PlannerType::Dijkstra;
+
+        bool algorithmDropdownOpen = false;
 
         bool planningResultAvailable = false;
 
