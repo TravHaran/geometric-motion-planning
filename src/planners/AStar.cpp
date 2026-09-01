@@ -6,6 +6,23 @@
 #include <algorithm>
 
 namespace { // we want to keep the euclidean heuristic file local
+
+struct Neighbor{
+    std::size_t node;
+    double weight;
+};
+
+std::vector<std::vector<Neighbor>> buildAdjacencyList(const Graph& graph){
+    std::vector<std::vector<Neighbor>> adjacency(graph.nodes.size());
+
+    for(const GraphEdge& edge : graph.edges){
+        adjacency[edge.from].push_back({edge.to, edge.weight});
+        adjacency[edge.to].push_back({edge.from, edge.weight});
+    }
+
+    return adjacency;
+}
+
 // Euclidean straight-line distance from a node to the goal.
 // This is used as A*'s heuristic h(n).
 double euclideanHeuristic(
@@ -74,6 +91,9 @@ AStarResult aStar(
     const std::size_t nodeCount =
         graph.nodes.size();
 
+    const std::vector<std::vector<Neighbor>> adjacency =
+        buildAdjacencyList(graph);
+
     // g(n): best known cost from start to each node.
     std::vector<double> distances(
         nodeCount,
@@ -120,47 +140,27 @@ AStarResult aStar(
         
         ++expandedNodes;
 
-        // Relax all edges connected to currentNode.
-        for(const GraphEdge& edge : graph.edges){
-
-            // nodeCount is used as an invalid-node sentinel.
-            std::size_t neighbor =
-                nodeCount;
-
-            // The graph is undirected, but each edge
-            // is stored only once.
-            if(edge.from == currentNode){
-
-                neighbor =
-                    edge.to;
-            }
-            else if(edge.to == currentNode){
-
-                neighbor =
-                    edge.from;
-            }
-            else{
-
-                continue;
-            }
+        // The graph stores each undirected edge once. The local
+        // adjacency list lets this loop visit only incident edges.
+        for(const Neighbor& neighbor : adjacency[currentNode]){
 
             // No need to relax already-finalized nodes.
-            if(visited[neighbor]){
+            if(visited[neighbor.node]){
                 continue;
             }
 
             const double newDistance =
                 distances[currentNode]
-                + edge.weight;
+                + neighbor.weight;
 
-            if(newDistance < distances[neighbor]){
+            if(newDistance < distances[neighbor.node]){
 
                 // A shorter route has been found.
-                distances[neighbor] =
+                distances[neighbor.node] =
                     newDistance;
 
                 // Remember how we reached this node.
-                parents[neighbor] =
+                parents[neighbor.node] =
                     currentNode;
             }
         }

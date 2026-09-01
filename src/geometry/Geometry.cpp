@@ -104,12 +104,18 @@ std::vector<Segment> polygonEdges(const Polygon& polygon) {
 }
 
 bool segmentIntersectsPolygon(const Segment& segment, const Polygon& polygon){
-    // Get polygon edges
-    std::vector<Segment> edges = polygonEdges(polygon);
-    // check each edge for for intersection
-    for(const Segment& edge : edges){
+    const std::size_t vertexCount = polygon.vertices.size();
+    if(vertexCount < 3) return false;
+
+    for(std::size_t i = 0; i < vertexCount; ++i){
+        const Segment edge{
+            polygon.vertices[i],
+            polygon.vertices[(i + 1) % vertexCount]
+        };
+
         if(segmentsIntersect(segment, edge)) return true;
     }
+
     return false;
 }
 
@@ -117,10 +123,14 @@ bool pointOnPolygonBoundary(
     const Point& point,
     const Polygon& polygon
 ){
-    std::vector<Segment> edges = polygonEdges(polygon);
+    const std::size_t vertexCount = polygon.vertices.size();
+    if(vertexCount < 3) return false;
 
-    for(const Segment& edge : edges){
-        if(onSegment(edge.a, edge.b, point)){
+    for(std::size_t i = 0; i < vertexCount; ++i){
+        const Point& a = polygon.vertices[i];
+        const Point& b = polygon.vertices[(i + 1) % vertexCount];
+
+        if(onSegment(a, b, point)){
             return true;
         }
     }
@@ -140,11 +150,11 @@ bool pointInPolygon(
 
     // Use Winding Number algorithm to determine if a point is in a polygon
     int windingNumber = 0;
-    std::vector<Segment> edges = polygonEdges(polygon);
+    const std::size_t vertexCount = polygon.vertices.size();
 
-    for (const Segment& edge: edges){
-        const Point& A = edge.a;
-        const Point& B = edge.b;
+    for(std::size_t i = 0; i < vertexCount; ++i){
+        const Point& A = polygon.vertices[i];
+        const Point& B = polygon.vertices[(i + 1) % vertexCount];
 
         // edge case
         // if point lies directly on an edge, count it as inside
@@ -239,9 +249,15 @@ bool isVisible(
             return false;
         }
 
-        std::vector<Segment> edges = polygonEdges(obstacle);
         // proper crossing test
-        for(const Segment& edge : edges){
+        const std::size_t vertexCount = obstacle.vertices.size();
+
+        for(std::size_t i = 0; i < vertexCount; ++i){
+            const Segment edge{
+                obstacle.vertices[i],
+                obstacle.vertices[(i + 1) % vertexCount]
+            };
+
             if(segmentsProperlyIntersect(candidate, edge)){
                 return false;
             }

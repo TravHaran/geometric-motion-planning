@@ -4,6 +4,26 @@
 #include <limits>
 #include <vector>
 
+namespace{
+
+struct Neighbor{
+    std::size_t node;
+    double weight;
+};
+
+std::vector<std::vector<Neighbor>> buildAdjacencyList(const Graph& graph){
+    std::vector<std::vector<Neighbor>> adjacency(graph.nodes.size());
+
+    for(const GraphEdge& edge : graph.edges){
+        adjacency[edge.from].push_back({edge.to, edge.weight});
+        adjacency[edge.to].push_back({edge.from, edge.weight});
+    }
+
+    return adjacency;
+}
+
+}
+
 /*
  * Dijkstra's Algorithm
  *
@@ -74,6 +94,9 @@ DijkstraResult dijkstra(
 
     const std::size_t nodeCount =
         graph.nodes.size();
+
+    const std::vector<std::vector<Neighbor>> adjacency =
+        buildAdjacencyList(graph);
 
     /*
      * distance[i]
@@ -153,35 +176,12 @@ DijkstraResult dijkstra(
         ++expandedNodes;
 
 
-        /*
-         * Examine every edge connected to currentNode.
-         *
-         * Our GraphEdge representation stores each
-         * undirected edge only once:
-         *
-         *     {from, to, weight}
-         *
-         * Therefore currentNode may appear as either
-         * edge.from or edge.to.
-         */
-        for(const GraphEdge& edge : graph.edges){
-
-            // Invalid value means this edge is not connected
-            // to currentNode.
-            std::size_t neighbor = nodeCount;
-
-            if(edge.from == currentNode){
-                neighbor = edge.to;
-            }
-            else if(edge.to == currentNode){
-                neighbor = edge.from;
-            }
-            else{
-                continue;
-            }
+        // The graph stores each undirected edge once. The local
+        // adjacency list lets this loop visit only incident edges.
+        for(const Neighbor& neighbor : adjacency[currentNode]){
 
             // No need to relax already-finalized nodes.
-            if(visited[neighbor]){
+            if(visited[neighbor.node]){
                 continue;
             }
 
@@ -200,16 +200,16 @@ DijkstraResult dijkstra(
              */
             double newDistance =
                 distances[currentNode]
-                + edge.weight;
+                + neighbor.weight;
 
-            if(newDistance < distances[neighbor]){
+            if(newDistance < distances[neighbor.node]){
 
                 // A shorter route has been found.
-                distances[neighbor] =
+                distances[neighbor.node] =
                     newDistance;
 
                 // Remember how we reached this node.
-                parents[neighbor] =
+                parents[neighbor.node] =
                     currentNode;
             }
         }

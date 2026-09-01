@@ -10,6 +10,13 @@ std::vector<GraphNode> buildVisibilityNodes(
     const std::vector<Polygon>& obstacles
 ){
     std::vector<GraphNode> nodes;
+
+    std::size_t nodeCount = 2;
+    for(const Polygon& obstacle : obstacles){
+        nodeCount += obstacle.vertices.size();
+    }
+    nodes.reserve(nodeCount);
+
     // include start and goal nodes
     nodes.push_back({start});
     nodes.push_back({goal});
@@ -27,6 +34,7 @@ std::vector<GraphEdge> buildVisibilityEdges(
     const std::vector<Polygon>& obstacles
 ){
     std::vector<GraphEdge> edges;
+    edges.reserve(nodes.size() * 4);
 
     for(std::size_t i = 0; i < nodes.size(); ++i){
 
