@@ -19,3 +19,4 @@ cmake --build .
 ./bfs_tests
 ./dijkstra_tests
 ./astar_tests
+./pathlab_ui_tests

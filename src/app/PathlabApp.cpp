@@ -3,6 +3,7 @@
 #include "../visualization/Renderer.hpp"
 #include "../geometry/Triangulation.hpp"
 
+#include <array>
 #include <optional>
 #include <chrono>
 #include <cmath>
@@ -16,6 +17,27 @@ constexpr float MAX_CANVAS_ZOOM = 4.0f;
 constexpr float CANVAS_ZOOM_STEP = 1.15f;
 constexpr float CANVAS_WORLD_HALF_EXTENT = 50000.0f;
 constexpr unsigned int GLASS_BLUR_DOWNSAMPLE = 4;
+
+struct PlannerOption{
+    PlannerType type;
+    const char* name;
+};
+
+constexpr std::array<PlannerOption, 3> PLANNER_OPTIONS = {{
+    {PlannerType::BFS, "BFS"},
+    {PlannerType::Dijkstra, "Dijkstra"},
+    {PlannerType::AStar, "A*"}
+}};
+
+std::size_t getPlannerOptionIndex(PlannerType planner){
+    for(std::size_t i = 0; i < PLANNER_OPTIONS.size(); ++i){
+        if(PLANNER_OPTIONS[i].type == planner){
+            return i;
+        }
+    }
+
+    return 0;
+}
 
 sf::Vector2f toVector(const Point& point){
     return {
@@ -360,14 +382,14 @@ void PathlabApp::handleMousePressed(
 
     const PathlabUIData uiData = buildUIData();
 
-    const PathlabUIAction uiAction =
+    const PathlabUIInteraction uiInteraction =
         handlePathlabUIClick(
             event.position,
             window.getSize(),
             uiData
         );
 
-    switch(uiAction){
+    switch(uiInteraction.action){
 
         case PathlabUIAction::OpenHelpOverlay:
 
@@ -466,36 +488,20 @@ void PathlabApp::handleMousePressed(
 
             return;
 
-
-        case PathlabUIAction::SelectDijkstra:
+        case PathlabUIAction::SelectAlgorithm:
 
             algorithmDropdownOpen =
                 false;
 
-
-            if(selectedPlanner !=
-            PlannerType::Dijkstra){
-
-                selectedPlanner =
-                    PlannerType::Dijkstra;
-
-                invalidatePlanningResult();
+            if(uiInteraction.algorithmIndex >= PLANNER_OPTIONS.size()){
+                return;
             }
 
-            return;
-
-
-        case PathlabUIAction::SelectAStar:
-
-            algorithmDropdownOpen =
-                false;
-
-
             if(selectedPlanner !=
-            PlannerType::AStar){
+            PLANNER_OPTIONS[uiInteraction.algorithmIndex].type){
 
                 selectedPlanner =
-                    PlannerType::AStar;
+                    PLANNER_OPTIONS[uiInteraction.algorithmIndex].type;
 
                 invalidatePlanningResult();
             }
@@ -1015,44 +1021,45 @@ void PathlabApp::runPlanner(){
     // run shortest-path search
     const auto searchStart = std::chrono::steady_clock::now();
 
-    if(selectedPlanner == PlannerType::Dijkstra){
-        const DijkstraResult plannerResult =
-            dijkstra(
-                graph,
-                0,
-                1
-            );
+    switch(selectedPlanner){
+        case PlannerType::BFS:{
+            const BFSResult plannerResult = bfs(graph, 0, 1);
 
-        result.distance =
-            plannerResult.distance;
+            result = {
+                plannerResult.distance,
+                plannerResult.path,
+                plannerResult.expandedNodes,
+                plannerResult.expandedNodeOrder
+            };
 
-        result.path =
-            plannerResult.path;
+            break;
+        }
 
-        result.expandedNodes =
-            plannerResult.expandedNodes;
-        
-        result.expandedNodeOrder =
-            plannerResult.expandedNodeOrder;
-    } else{
-        const AStarResult plannerResult =
-            aStar(
-                graph,
-                0,
-                1
-            );
+        case PlannerType::Dijkstra:{
+            const DijkstraResult plannerResult = dijkstra(graph, 0, 1);
 
-        result.distance =
-            plannerResult.distance;
+            result = {
+                plannerResult.distance,
+                plannerResult.path,
+                plannerResult.expandedNodes,
+                plannerResult.expandedNodeOrder
+            };
 
-        result.path =
-            plannerResult.path;
+            break;
+        }
 
-        result.expandedNodes =
-            plannerResult.expandedNodes;
-        
-        result.expandedNodeOrder =
-            plannerResult.expandedNodeOrder;
+        case PlannerType::AStar:{
+            const AStarResult plannerResult = aStar(graph, 0, 1);
+
+            result = {
+                plannerResult.distance,
+                plannerResult.path,
+                plannerResult.expandedNodes,
+                plannerResult.expandedNodeOrder
+            };
+
+            break;
+        }
     }
 
     const auto searchEnd = std::chrono::steady_clock::now();
@@ -1129,11 +1136,14 @@ PathlabUIData PathlabApp::buildUIData() const
 {
     PathlabUIData data;
 
-    if(selectedPlanner == PlannerType::Dijkstra){
-        data.algorithm = "Dijkstra";
-    } else{
-        data.algorithm = "A*";
+    data.algorithmOptions.reserve(PLANNER_OPTIONS.size());
+
+    for(const PlannerOption& option : PLANNER_OPTIONS){
+        data.algorithmOptions.push_back(option.name);
     }
+
+    data.selectedAlgorithmIndex =
+        getPlannerOptionIndex(selectedPlanner);
 
     data.algorithmDropdownOpen = algorithmDropdownOpen;
     data.helpOverlayOpen = helpOverlayOpen;

@@ -5,12 +5,13 @@ written in C++17 with SFML 3. It builds classical 2D planning tools from first
 principles, pairs them with focused tests and theory notes, and exposes their
 behavior through an interactive visualizer.
 
-The current implementation plans shortest paths for a point robot among
-polygonal obstacles using visibility graphs, Dijkstra's algorithm, or A*. The
+The current implementation plans routes for a point robot among polygonal
+obstacles using visibility graphs with BFS, Dijkstra's algorithm, or A*. BFS
+minimizes edge count, while Dijkstra and A* minimize geometric path length. The
 long-term direction is to progress from these foundations toward clearance
-planning, configuration spaces, sampling-based methods, and eventually
-humanoid motion-planning research. Those later stages are roadmap goals, not
-current capabilities.
+planning, configuration spaces, sampling-based methods, and eventually humanoid
+motion-planning research. Those later stages are roadmap goals, not current
+capabilities.
 
 For detailed implementation status, conventions, and milestones, see
 [PROJECT_STATE.md](PROJECT_STATE.md).
@@ -22,9 +23,10 @@ For detailed implementation status, conventions, and milestones, see
   collision predicates
 - Polygonal obstacle environments with boundary-aware collision semantics
 - Undirected visibility graphs with Euclidean edge weights
-- Dijkstra and A* shortest-path search with path reconstruction
+- BFS hop-minimizing search and Dijkstra/A* shortest-path search with path
+  reconstruction
 - Planner instrumentation, including expanded-node order and count
-- Focused geometry, graph, Dijkstra, and A* regression tests
+- Focused geometry, graph, BFS, Dijkstra, and A* regression tests
 - A sequence of permanent SFML demos documenting project milestones
 - PATHLAB, an interactive planning and search-visualization application
 
@@ -32,7 +34,7 @@ For detailed implementation status, conventions, and milestones, see
 
 PATHLAB is the current primary application (`demo_2e`). It provides an
 interactive canvas for constructing polygonal scenes, placing start and goal
-positions, selecting Dijkstra or A*, and running the planner.
+positions, selecting BFS, Dijkstra, or A*, and running the planner.
 
 The interface can display obstacles, the visibility graph, the final path, and
 expanded nodes independently. Its metrics panel reports planner status,
@@ -69,7 +71,7 @@ and playback controls are operated with the left mouse button.
 | Open or close Help | Click the top-bar **?** button or press `?` |
 | Show or hide the planner sidebar | Click the top-bar sidebar icon or press `Tab` |
 | Load the showcase scene | Click **Load Demo** at the upper-right of the canvas |
-| Select a planner | Choose **Dijkstra** or **A\*** from the Algorithm selector |
+| Select a planner | Choose **BFS**, **Dijkstra**, or **A\*** from the Algorithm selector |
 | Run the selected planner | Click **Run Planner** or press `Space` |
 | Reset the complete scene | `R` |
 | Toggle the visibility graph | `V` or click **Visibility Graph** |
@@ -136,8 +138,9 @@ Run the complete regression suite from the repository root:
 ./test.sh
 ```
 
-This builds and runs the geometry, graph, Dijkstra, and A* test executables.
-The mathematical and planning layers remain independent of SFML.
+This builds and runs the geometry, graph, BFS, Dijkstra, A*, and PATHLAB UI
+test executables. The mathematical and planning layers remain independent of
+SFML.
 
 ## Project structure
 
@@ -146,7 +149,7 @@ The mathematical and planning layers remain independent of SFML.
 | `assets/` | Runtime fonts and the Gaussian backdrop-blur shader |
 | `src/geometry/` | Geometry types, predicates, collision logic, and polygon triangulation |
 | `src/graph/` | Graph representation and visibility-graph construction |
-| `src/planners/` | Dijkstra and A* search implementations |
+| `src/planners/` | BFS, Dijkstra, and A* search implementations |
 | `src/visualization/` | Reusable SFML drawing helpers and legacy demo panels |
 | `src/ui/` | PATHLAB interface layout, drawing, and hit testing |
 | `src/app/` | PATHLAB application state, input, planning orchestration, playback, camera, and rendering |

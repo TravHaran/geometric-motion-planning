@@ -244,6 +244,8 @@ add_executable(
 
     src/graph/VisibilityGraph.cpp
 
+    src/planners/BFS.cpp
+
     src/planners/Dijkstra.cpp
 
     src/planners/AStar.cpp
@@ -370,4 +372,29 @@ target_include_directories(
     astar_tests
     PRIVATE
     src
+)
+
+# ---------------------------------
+# PATHLAB UI unit tests
+# ---------------------------------
+
+add_executable(
+    pathlab_ui_tests
+
+    tests/pathlab_ui_tests.cpp
+    src/ui/PathlabUI.cpp
+)
+
+target_include_directories(
+    pathlab_ui_tests
+    PRIVATE
+    src
+)
+
+target_link_libraries(
+    pathlab_ui_tests
+    PRIVATE
+    SFML::Graphics
+    SFML::Window
+    SFML::System
 )

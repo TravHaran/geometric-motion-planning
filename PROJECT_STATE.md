@@ -80,6 +80,9 @@ Completed:
 - Interactive planner visualization
 - Dijkstra vs A* comparison
 - PATHLAB interactive planning visualizer
+- BFS, Dijkstra, and A* selection and comparison in PATHLAB
+- Data-driven PATHLAB planner selector with indexed UI selection and focused
+  selector regression tests
 - Cached and batched PATHLAB scene rendering
 - Event-driven, frame-limited PATHLAB application loop
 - Search playback with current-expansion and goal-reached highlighting in a
@@ -103,7 +106,7 @@ Current demos:
 - `demo_2b` — Dijkstra on a visibility graph
 - `demo_2c` — Interactive Dijkstra planning sandbox
 - `demo_2d` — Interactive Dijkstra / A* comparison
-- `demo_2e` — PATHLAB interactive planning visualizer
+- `demo_2e` — PATHLAB interactive BFS / Dijkstra / A* planning visualizer
 
 Next major milestone:
 

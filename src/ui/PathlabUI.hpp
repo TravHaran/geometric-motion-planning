@@ -2,7 +2,9 @@
 
 #include <SFML/Graphics.hpp>
 
+#include <cstddef>
 #include <string>
+#include <vector>
 
 constexpr float PATHLAB_TOP_BAR_HEIGHT = 64.0f;
 constexpr float PATHLAB_BOTTOM_BAR_HEIGHT = 48.0f;
@@ -24,13 +26,28 @@ enum class PathlabUIAction{
     TogglePlayback,
     CyclePlaybackSpeed,
     ToggleAlgorithmDropdown,
-    SelectDijkstra,
-    SelectAStar,
+    SelectAlgorithm,
     CloseAlgorithmDropdown
 };
 
+struct PathlabUIInteraction{
+    PathlabUIAction action = PathlabUIAction::None;
+    std::size_t algorithmIndex = 0;
+
+    PathlabUIInteraction(
+        PathlabUIAction actionValue = PathlabUIAction::None,
+        std::size_t algorithmIndexValue = 0
+    ):
+        action(actionValue),
+        algorithmIndex(algorithmIndexValue)
+    {
+    }
+};
+
 struct PathlabUIData{
-    std::string algorithm;
+    std::vector<std::string> algorithmOptions;
+
+    std::size_t selectedAlgorithmIndex = 0;
 
     bool algorithmDropdownOpen = false;
 
@@ -89,7 +106,7 @@ void drawPathlabUI(
     const PathlabGlassBackdrop& glassBackdrop
 );
 
-PathlabUIAction handlePathlabUIClick(
+PathlabUIInteraction handlePathlabUIClick(
     const sf::Vector2i& position,
     const sf::Vector2u& windowSize,
     const PathlabUIData& data

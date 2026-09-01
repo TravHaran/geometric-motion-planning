@@ -1129,6 +1129,18 @@ void drawStatusBadge(
 // Algorithm selector
 // =====================================
 
+const std::string& getSelectedAlgorithmName(
+    const PathlabUIData& data
+){
+    static const std::string emptyName;
+
+    if(data.selectedAlgorithmIndex >= data.algorithmOptions.size()){
+        return emptyName;
+    }
+
+    return data.algorithmOptions[data.selectedAlgorithmIndex];
+}
+
 void drawAlgorithmSelector(
     sf::RenderWindow& window,
     const sf::Font& font,
@@ -1208,18 +1220,13 @@ void drawAlgorithmSelector(
 void drawAlgorithmDropdown(
     sf::RenderWindow& window,
     const sf::Font& font,
-    const std::string& selectedAlgorithm
+    const std::vector<std::string>& options,
+    std::size_t selectedAlgorithmIndex
 ){
     const sf::Vector2i mousePosition =
         sf::Mouse::getPosition(
             window
         );
-
-
-    const std::string options[2] = {
-        "Dijkstra",
-        "A*"
-    };
 
     const sf::FloatRect firstOptionBounds =
         getAlgorithmOptionBounds(window.getSize(), 0);
@@ -1228,7 +1235,7 @@ void drawAlgorithmDropdown(
         firstOptionBounds.position,
         sf::Vector2f(
             firstOptionBounds.size.x,
-            firstOptionBounds.size.y * 2.0f
+            firstOptionBounds.size.y * static_cast<float>(options.size())
         )
     );
 
@@ -1241,7 +1248,7 @@ void drawAlgorithmDropdown(
     );
 
 
-    for(std::size_t i = 0; i < 2; ++i){
+    for(std::size_t i = 0; i < options.size(); ++i){
 
         const sf::FloatRect bounds =
             getAlgorithmOptionBounds(
@@ -1257,7 +1264,7 @@ void drawAlgorithmDropdown(
             );
 
         const bool selected =
-            options[i] == selectedAlgorithm;
+            i == selectedAlgorithmIndex;
 
         if(hovered || selected){
             const sf::FloatRect highlightBounds(
@@ -1308,7 +1315,7 @@ void drawAlgorithmDropdown(
             window.draw(selectedIndicator);
         }
 
-        if(i == 0){
+        if(i + 1 < options.size()){
             drawDivider(
                 window,
                 bounds.position.x + 8.0f,
@@ -2114,7 +2121,7 @@ void drawSidePanel(
     drawAlgorithmSelector(
         window,
         font,
-        data.algorithm,
+        getSelectedAlgorithmName(data),
         data.algorithmDropdownOpen,
         panelX,
         y
@@ -2905,7 +2912,7 @@ void drawHelpOverlay(
 
     drawHelpControlRow(window, font, "SPACE", "Run the selected planner", contentLeft, leftY);
     leftY += rowSpacing;
-    drawHelpControlRow(window, font, "ALGORITHM", "Choose Dijkstra or A*", contentLeft, leftY);
+    drawHelpControlRow(window, font, "ALGORITHM", "Choose planning algorithm", contentLeft, leftY);
     leftY += rowSpacing + sectionGap;
 
     drawHelpSectionHeading(
@@ -3027,7 +3034,8 @@ void drawPathlabUI(
         drawAlgorithmDropdown(
             window,
             font,
-            data.algorithm
+            data.algorithmOptions,
+            data.selectedAlgorithmIndex
         );
     }
 
@@ -3046,7 +3054,7 @@ void drawPathlabUI(
     }
 }
 
-PathlabUIAction handlePathlabUIClick(
+PathlabUIInteraction handlePathlabUIClick(
     const sf::Vector2i& position,
     const sf::Vector2u& windowSize,
     const PathlabUIData& data
@@ -3087,32 +3095,22 @@ PathlabUIAction handlePathlabUIClick(
 
     if(data.sidebarVisible && data.algorithmDropdownOpen){
 
-        const sf::FloatRect dijkstraBounds =
-            getAlgorithmOptionBounds(
-                windowSize,
-                0
-            );
+        for(std::size_t i = 0; i < data.algorithmOptions.size(); ++i){
+            const sf::FloatRect optionBounds =
+                getAlgorithmOptionBounds(
+                    windowSize,
+                    i
+                );
 
-        if(containsPoint(
-            dijkstraBounds,
-            position
-        )){
-            return
-                PathlabUIAction::SelectDijkstra;
-        }
-
-        const sf::FloatRect aStarBounds =
-            getAlgorithmOptionBounds(
-                windowSize,
-                1
-            );
-
-        if(containsPoint(
-            aStarBounds,
-            position
-        )){
-            return
-                PathlabUIAction::SelectAStar;
+            if(containsPoint(
+                optionBounds,
+                position
+            )){
+                return {
+                    PathlabUIAction::SelectAlgorithm,
+                    i
+                };
+            }
         }
     }
 

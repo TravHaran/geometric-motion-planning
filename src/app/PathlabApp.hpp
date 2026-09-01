@@ -9,6 +9,7 @@
 #include "../geometry/Polygon.hpp"
 #include "../geometry/Segment.hpp"
 #include "../graph/VisibilityGraph.hpp"
+#include "../planners/BFS.hpp"
 #include "../planners/Dijkstra.hpp"
 #include "../planners/AStar.hpp"
 #include "../ui/PathlabUI.hpp"
@@ -31,6 +32,7 @@ enum class InputMode{
 };
 
 enum class PlannerType{
+    BFS,
     Dijkstra,
     AStar
 };
