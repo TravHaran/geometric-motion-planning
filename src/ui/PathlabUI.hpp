@@ -8,6 +8,11 @@ constexpr float PATHLAB_TOP_BAR_HEIGHT = 64.0f;
 constexpr float PATHLAB_BOTTOM_BAR_HEIGHT = 48.0f;
 constexpr float PATHLAB_SIDE_PANEL_WIDTH = 300.0f;
 
+enum class PathlabUIAction{
+    None,
+    RunPlanner
+};
+
 struct PathlabUIData{
     std::string algorithm;
     std::string plannerStatus;
@@ -35,4 +40,9 @@ void drawPathlabUI(
     sf::RenderWindow& window, 
     const sf::Font& font, 
     const PathlabUIData& data
+);
+
+PathlabUIAction handlePathlabUIClick(
+    const sf::Vector2i& position,
+    const sf::Vector2u& windowSize
 );

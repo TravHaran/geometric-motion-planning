@@ -178,6 +178,33 @@ void drawValueRow(
     window.draw(valueText);
 }
 
+sf::FloatRect getRunPlannerButtonBounds(const sf::Vector2u& windowSize){
+    const float windowWidth = static_cast<float>(windowSize.x);
+
+    const float windowHeight = static_cast<float>(windowSize.y);
+
+    const float panelX = windowWidth - PATHLAB_SIDE_PANEL_WIDTH;
+
+    const float buttonY = windowHeight - PATHLAB_BOTTOM_BAR_HEIGHT - 56.0f;
+
+    return sf::FloatRect(
+        sf::Vector2f(panelX + 20.0f, buttonY),
+        sf::Vector2f(PATHLAB_SIDE_PANEL_WIDTH - 40.0f, 40.0f)
+    );
+}
+
+bool containsPoint(const sf::FloatRect& bounds, const sf::Vector2i& position){
+    const float x = static_cast<float>(position.x);
+
+    const float y = static_cast<float>(position.y);
+
+    return
+        x >= bounds.position.x &&
+        x < bounds.position.x + bounds.size.x &&
+        y >= bounds.position.y &&
+        y < bounds.position.y + bounds.size.y;
+}
+
 // =====================================
 // Checkbox-style visualization row
 // =====================================
