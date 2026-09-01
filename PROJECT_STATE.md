@@ -71,6 +71,7 @@ Completed:
 
 - Visibility graph construction
 - Euclidean graph edge weights
+- Breadth-First Search (BFS)
 - Dijkstra shortest-path search
 - A* shortest-path search
 - Euclidean A* heuristic

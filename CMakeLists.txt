@@ -314,6 +314,26 @@ target_include_directories(
 )
 
 # ---------------------------------
+# BFS unit tests
+# ---------------------------------
+
+add_executable(
+    bfs_tests
+
+    tests/bfs_tests.cpp
+
+    src/planners/BFS.cpp
+    src/planners/Dijkstra.cpp
+)
+
+target_include_directories(
+    bfs_tests
+    PRIVATE
+    src
+)
+
+
+# ---------------------------------
 # Dijkstra unit tests
 # ---------------------------------
 

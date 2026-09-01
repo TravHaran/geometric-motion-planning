@@ -16,5 +16,6 @@ cmake --build .
 
 ./geometry_tests
 ./graph_tests
+./bfs_tests
 ./dijkstra_tests
 ./astar_tests

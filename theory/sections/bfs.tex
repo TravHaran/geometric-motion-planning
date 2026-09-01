@@ -1,0 +1,321 @@
+\section{Breadth-First Search}
+
+Breadth-First Search (BFS) is a graph-search algorithm that explores nodes
+level by level outward from a start node.
+
+BFS is designed for unweighted graphs, or equivalently for graphs in which
+every edge has the same cost.
+
+Its key property is that the first path it finds to a node uses the minimum
+possible number of edges from the start.
+
+Therefore, BFS minimizes
+
+\[
+\text{hop count},
+\]
+
+rather than weighted path cost.
+
+\subsection{Queue-Based Exploration}
+
+BFS uses a first-in, first-out queue.
+
+The start node is inserted into the queue first.
+
+The algorithm repeatedly:
+
+\begin{enumerate}
+    \item removes the node at the front of the queue,
+    \item examines all of its unvisited neighbors,
+    \item marks newly discovered neighbors as visited,
+    \item records the current node as their parent,
+    \item inserts those neighbors at the back of the queue.
+\end{enumerate}
+
+Because nodes are processed in the same order in which they are discovered,
+the search expands the graph one level at a time.
+
+Conceptually, the traversal proceeds as
+
+\[
+\text{level }0
+\rightarrow
+\text{level }1
+\rightarrow
+\text{level }2
+\rightarrow
+\cdots
+\]
+
+where level $k$ contains nodes that can be reached from the start using
+exactly $k$ edges.
+
+\subsection{Visited Nodes}
+
+A visited structure is used to prevent nodes from being inserted into the
+queue multiple times.
+
+In the current project, graph nodes are indexed by dense integer IDs,
+
+\[
+0,1,\ldots,|V|-1,
+\]
+
+so a boolean array can be used:
+
+\[
+\texttt{visited}[i].
+\]
+
+A node is marked visited when it is inserted into the queue.
+
+This prevents two different already-expanded nodes from inserting the same
+neighbor into the queue more than once.
+
+\subsection{Shortest Path in an Unweighted Graph}
+
+Suppose the goal node is first discovered at level $k$.
+
+Every node in levels
+
+\[
+0,1,\ldots,k-1
+\]
+
+has already been explored before any node at level $k+1$ is considered.
+
+Therefore, no path containing fewer than $k$ edges can exist.
+
+Hence BFS returns a path with minimum hop count.
+
+If all graph edges have identical cost $c$, minimizing hop count also
+minimizes total path cost because
+
+\[
+\text{cost}(P)
+=
+c \cdot
+\text{number of edges in }P.
+\]
+
+\subsection{BFS on a Weighted Visibility Graph}
+
+The visibility graph used in this project is weighted.
+
+Each edge weight is its Euclidean length:
+
+\[
+w(u,v)
+=
+\|u-v\|.
+\]
+
+BFS ignores these edge weights during search.
+
+It therefore optimizes
+
+\[
+\text{number of visibility edges}
+\]
+
+rather than
+
+\[
+\text{total Euclidean path length}.
+\]
+
+This means a BFS path can use fewer graph edges while still being
+geometrically longer than the path found by Dijkstra's algorithm or A*.
+
+For example, BFS may prefer a direct one-edge route of length
+
+\[
+10
+\]
+
+over a four-edge route whose total length is
+
+\[
+4.
+\]
+
+BFS chooses the first path because
+
+\[
+1 < 4,
+\]
+
+while Dijkstra chooses the second because
+
+\[
+4 < 10.
+\]
+
+This difference makes BFS useful in the project as a comparison algorithm,
+even though it is not the correct weighted shortest-path planner for the
+visibility graph.
+
+\subsection{Path Reconstruction}
+
+Like Dijkstra's algorithm and A*, BFS stores a parent for each newly
+discovered node.
+
+If node $v$ is first discovered while expanding node $u$, then
+
+\[
+\text{parent}(v)=u.
+\]
+
+Once the goal is reached, parent links are followed backward:
+
+\[
+G
+\rightarrow
+\text{parent}(G)
+\rightarrow
+\cdots
+\rightarrow
+S.
+\]
+
+This produces the path in reverse order.
+
+Reversing the sequence gives
+
+\[
+S
+\rightarrow
+\cdots
+\rightarrow
+G.
+\]
+
+\subsection{Reporting Geometric Path Length}
+
+Although BFS ignores edge weights during search, the implementation still
+reports the total geometric length of the final path.
+
+If the BFS path contains edges
+
+\[
+e_1,e_2,\ldots,e_k,
+\]
+
+then the reported geometric distance is
+
+\[
+L_{\text{BFS}}
+=
+\sum_{i=1}^{k} w(e_i).
+\]
+
+This value is measured after the path has been selected.
+
+It does not influence the BFS search order.
+
+Reporting geometric path length allows BFS results to be compared directly
+with Dijkstra and A* in the interactive planner.
+
+\subsection{Undirected Visibility Edges}
+
+Visibility is symmetric.
+
+If node $u$ is visible from node $v$, then node $v$ is also visible from
+node $u$.
+
+The visibility graph therefore represents an undirected graph.
+
+Each undirected edge is stored only once, but the BFS adjacency list inserts
+both directions:
+
+\[
+u \rightarrow v
+\]
+
+and
+
+\[
+v \rightarrow u.
+\]
+
+This allows BFS to traverse the visibility graph correctly regardless of
+which endpoint appears first in the stored edge.
+
+\subsection{Expanded Nodes}
+
+For consistency with Dijkstra and A*, this project counts a node as expanded
+when it has been removed from the queue and its neighbors are about to be
+examined.
+
+The goal node is not counted as expanded if the search terminates immediately
+when the goal is removed from the queue.
+
+This shared definition allows expanded-node counts to be compared across all
+three planners.
+
+\subsection{Complexity}
+
+Using an adjacency-list representation, every vertex is inserted into and
+removed from the queue at most once.
+
+Every undirected edge is examined a constant number of times.
+
+Therefore, the time complexity is
+
+\[
+O(|V|+|E|).
+\]
+
+The visited array, parent array, adjacency list, and queue require
+
+\[
+O(|V|+|E|)
+\]
+
+space overall.
+
+If only the additional search state beyond the graph representation is
+counted, the BFS working memory is
+
+\[
+O(|V|).
+\]
+
+\subsection{Comparison with Dijkstra and A*}
+
+The three current graph-search planners differ primarily in how they choose
+which node to explore.
+
+BFS processes nodes according to graph depth and minimizes
+
+\[
+\text{hop count}.
+\]
+
+Dijkstra selects the node with the smallest known weighted cost
+
+\[
+g(n)
+\]
+
+and minimizes total path weight.
+
+A* selects nodes using
+
+\[
+f(n)=g(n)+h(n),
+\]
+
+where $h(n)$ estimates the remaining cost to the goal.
+
+For the current Euclidean visibility graph:
+
+\begin{itemize}
+    \item BFS is not guaranteed to produce the geometrically shortest path.
+    \item Dijkstra and A* should produce the same optimal geometric path cost.
+    \item A* may expand fewer nodes than Dijkstra because of its heuristic.
+\end{itemize}
+
+This makes BFS, Dijkstra, and A* useful together for demonstrating the effect
+of different graph-search objectives and search strategies.
