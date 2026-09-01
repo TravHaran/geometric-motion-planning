@@ -10,6 +10,7 @@ struct DijkstraResult{
     double distance;
     std::vector<std::size_t> path;
     std::size_t expandedNodes;
+    std::vector<std::size_t> expandedNodeOrder;
 };
 
 DijkstraResult dijkstra(

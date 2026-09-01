@@ -87,6 +87,8 @@ class PathlabApp{
 
         void drawVisibilityGraph();
 
+        void drawExploredNodes();
+
         void drawPath();
 
         void rebuildCanvasRenderCache();
@@ -114,6 +116,8 @@ class PathlabApp{
 
         sf::VertexArray visibilityNodeVertices{sf::PrimitiveType::Triangles};
 
+        sf::VertexArray exploredNodeVertices{sf::PrimitiveType::Triangles};
+
         sf::VertexArray pathVertices{sf::PrimitiveType::Triangles};
 
         sf::VertexArray pathMarkerVertices{sf::PrimitiveType::Triangles};
@@ -136,6 +140,7 @@ class PathlabApp{
             double distance = 0.0;
             std::vector<std::size_t> path;
             std::size_t expandedNodes = 0;
+            std::vector<std::size_t> expandedNodeOrder;
         };
 
         Graph graph;
@@ -151,6 +156,8 @@ class PathlabApp{
         bool showObstacles = true;
 
         bool showVisibilityGraph = true;
+
+        bool showExploredNodes = true;
 
         bool showFinalPath = true;
 

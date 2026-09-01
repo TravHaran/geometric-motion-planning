@@ -88,6 +88,8 @@ AStarResult aStar(
 ){
     std::size_t expandedNodes = 0;
 
+    std::vector<std::size_t> expandedNodeOrder;
+
     const std::size_t nodeCount =
         graph.nodes.size();
 
@@ -139,6 +141,7 @@ AStarResult aStar(
             true;
         
         ++expandedNodes;
+        expandedNodeOrder.push_back(currentNode);
 
         // The graph stores each undirected edge once. The local
         // adjacency list lets this loop visit only incident edges.
@@ -178,7 +181,8 @@ AStarResult aStar(
         return {
             std::numeric_limits<double>::infinity(),
             {},
-            expandedNodes
+            expandedNodes,
+            expandedNodeOrder
         };
     }
 
@@ -211,6 +215,7 @@ AStarResult aStar(
     return {
         distances[goalNode],
         path,
-        expandedNodes
+        expandedNodes,
+        expandedNodeOrder
     };
 }

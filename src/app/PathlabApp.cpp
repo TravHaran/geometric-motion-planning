@@ -275,7 +275,8 @@ void PathlabApp::handleMousePressed(
         handlePathlabUIClick(
             event.position,
             window.getSize(),
-            algorithmDropdownOpen
+            algorithmDropdownOpen,
+            planningResultAvailable
         );
 
     switch(uiAction){
@@ -319,6 +320,17 @@ void PathlabApp::handleMousePressed(
 
             showFinalPath =
                 !showFinalPath;
+
+            return;
+        
+
+        case PathlabUIAction::ToggleExploredNodes:
+
+            algorithmDropdownOpen =
+                false;
+
+            showExploredNodes =
+                !showExploredNodes;
 
             return;
 
@@ -478,6 +490,8 @@ void PathlabApp::render(){
 
     drawObstacles();
 
+    drawExploredNodes();
+
     drawPath();
 
     drawCurrentObstacle();
@@ -556,6 +570,21 @@ void PathlabApp::drawVisibilityGraph(){
     window.draw(visibilityNodeVertices);
 }
 
+void PathlabApp::drawExploredNodes(){
+
+    if(
+        !planningResultAvailable
+        ||
+        !showExploredNodes
+    ){
+        return;
+    }
+
+    window.draw(
+        exploredNodeVertices
+    );
+}
+
 void PathlabApp::drawPath(){
     if(!planningResultAvailable || !showFinalPath) return;
 
@@ -596,6 +625,9 @@ void PathlabApp::runPlanner(){
 
         result.expandedNodes =
             plannerResult.expandedNodes;
+        
+        result.expandedNodeOrder =
+            plannerResult.expandedNodeOrder;
     } else{
         const AStarResult plannerResult =
             aStar(
@@ -612,6 +644,9 @@ void PathlabApp::runPlanner(){
 
         result.expandedNodes =
             plannerResult.expandedNodes;
+        
+        result.expandedNodeOrder =
+            plannerResult.expandedNodeOrder;
     }
 
     const auto searchEnd = std::chrono::steady_clock::now();
@@ -627,15 +662,23 @@ void PathlabApp::runPlanner(){
 void PathlabApp::invalidatePlanningResult(){
     graph.nodes.clear();
     graph.edges.clear();
+
     result.path.clear();
+    result.expandedNodeOrder.clear();
+    result.distance = 0.0;
+    result.expandedNodes = 0;
 
     visibilityGraphVertices.clear();
     visibilityNodeVertices.clear();
+
+    exploredNodeVertices.clear();
+
     pathVertices.clear();
     pathMarkerVertices.clear();
 
     graphBuildTimeMs = 0.0;
     searchTimeMs = 0.0;
+
     planningResultAvailable = false;
 }
 
@@ -695,6 +738,11 @@ PathlabUIData PathlabApp::buildUIData() const
     data.showObstacles = showObstacles;
     data.showVisibilityGraph = showVisibilityGraph;
     data.showFinalPath = showFinalPath;
+    data.showExploredNodes = showExploredNodes;
+    data.hasSearchTrace =
+        planningResultAvailable
+        &&
+        !result.expandedNodeOrder.empty();
 
     return data;
 }
@@ -786,6 +834,7 @@ void PathlabApp::rebuildObstacleRenderCache(){
 void PathlabApp::rebuildPlanningRenderCache(){
     visibilityGraphVertices.clear();
     visibilityNodeVertices.clear();
+    exploredNodeVertices.clear();
     pathVertices.clear();
     pathMarkerVertices.clear();
 
@@ -803,6 +852,23 @@ void PathlabApp::rebuildPlanningRenderCache(){
 
     for(const GraphNode& node : graph.nodes){
         appendFilledCircle(visibilityNodeVertices, node.position, 2.5f, nodeColor);
+    }
+
+    const sf::Color exploredColor{
+        59,
+        130,
+        246
+    };
+
+    for(const std::size_t nodeIndex :
+        result.expandedNodeOrder){
+
+        appendFilledCircle(
+            exploredNodeVertices,
+            graph.nodes[nodeIndex].position,
+            5.0f,
+            exploredColor
+        );
     }
 
     const sf::Color pathColor{250, 204, 21};

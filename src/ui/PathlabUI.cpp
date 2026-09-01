@@ -995,9 +995,26 @@ void drawSidePanel(
         WARNING
     );
 
+    if(data.hasSearchTrace){
+
+        y += 23.0f;
+
+        drawCheckboxRow(
+            window,
+            font,
+            "Explored Nodes",
+            data.showExploredNodes,
+            panelX,
+            y,
+            sf::Color(
+                59,
+                130,
+                246
+            )
+        );
+    }
 
     y += 27.0f;
-
 
     drawDivider(
         window,
@@ -1007,13 +1024,11 @@ void drawSidePanel(
             - 40.0f
     );
 
-
     // =====================================
     // Scene
     // =====================================
 
     y += 14.0f;
-
 
     drawSectionHeading(
         window,
@@ -1023,9 +1038,7 @@ void drawSidePanel(
         y
     );
 
-
     y += 24.0f;
-
 
     drawValueRow(
         window,
@@ -1038,9 +1051,7 @@ void drawSidePanel(
         y
     );
 
-
     y += 21.0f;
-
 
     drawValueRow(
         window,
@@ -1501,7 +1512,8 @@ void drawPathlabUI(
 PathlabUIAction handlePathlabUIClick(
     const sf::Vector2i& position,
     const sf::Vector2u& windowSize,
-    bool algorithmDropdownOpen
+    bool algorithmDropdownOpen,
+    bool hasSearchTrace
 ){
     const sf::FloatRect selectorBounds =
         getAlgorithmSelectorBounds(
@@ -1617,6 +1629,19 @@ PathlabUIAction handlePathlabUIClick(
         return
             PathlabUIAction::ToggleFinalPath;
     }
+
+    if(hasSearchTrace){
+        const sf::FloatRect exploredNodesBounds =
+            getVisualizationRowBounds(
+                windowSize,
+                3
+            );
+
+        if(containsPoint(exploredNodesBounds,position)){
+            return PathlabUIAction::ToggleExploredNodes;
+        }
+    }
+
 
     // Clicking anywhere else closes
     // an open dropdown.

@@ -14,6 +14,7 @@ enum class PathlabUIAction{
     ToggleObstacles,
     ToggleVisibilityGraph,
     ToggleFinalPath,
+    ToggleExploredNodes,
     ToggleAlgorithmDropdown,
     SelectDijkstra,
     SelectAStar,
@@ -43,6 +44,9 @@ struct PathlabUIData{
     bool showObstacles = true;
     bool showVisibilityGraph = true;
     bool showFinalPath = true;
+
+    bool showExploredNodes = true;
+    bool hasSearchTrace = false;
 };
 
 bool loadPathlabFont(sf::Font& font);
@@ -56,5 +60,6 @@ void drawPathlabUI(
 PathlabUIAction handlePathlabUIClick(
     const sf::Vector2i& position,
     const sf::Vector2u& windowSize,
-    bool algorithmDropdownOpen
+    bool algorithmDropdownOpen,
+    bool hasSearchTrace
 );

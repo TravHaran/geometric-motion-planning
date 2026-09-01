@@ -87,6 +87,7 @@ DijkstraResult dijkstra(
     std::size_t goalNode
 ){
     std::size_t expandedNodes = 0;
+    std::vector<std::size_t> expandedNodeOrder;
     /**
      * A node is expanded when the algorithm selects it 
      * and is about to examine its outgoing edges.
@@ -174,6 +175,7 @@ DijkstraResult dijkstra(
         visited[currentNode] = true;
 
         ++expandedNodes;
+        expandedNodeOrder.push_back(currentNode);
 
 
         // The graph stores each undirected edge once. The local
@@ -230,7 +232,8 @@ DijkstraResult dijkstra(
         return {
             std::numeric_limits<double>::infinity(),
             {},
-            expandedNodes
+            expandedNodes,
+            expandedNodeOrder
         };
     }
 
@@ -272,6 +275,7 @@ DijkstraResult dijkstra(
     return {
         distances[goalNode],
         path,
-        expandedNodes
+        expandedNodes,
+        expandedNodeOrder
     };
 }
