@@ -36,6 +36,8 @@ struct PathlabUIData{
 
     std::string plannerStatus;
 
+    bool canRunPlanner = false;
+
     std::size_t obstacleCount = 0;
     std::size_t graphNodeCount = 0;
     std::size_t graphEdgeCount = 0;
@@ -52,6 +54,10 @@ struct PathlabUIData{
     bool showObstacles = true;
     bool showVisibilityGraph = true;
     bool showFinalPath = true;
+
+    bool hasObstacles = false;
+    bool hasVisibilityGraph = false;
+    bool hasFinalPath = false;
 
     bool showExploredNodes = true;
     bool hasSearchTrace = false;
@@ -76,8 +82,7 @@ void drawPathlabUI(
 PathlabUIAction handlePathlabUIClick(
     const sf::Vector2i& position,
     const sf::Vector2u& windowSize,
-    bool algorithmDropdownOpen,
-    bool hasSearchTrace
+    const PathlabUIData& data
 );
 
 bool isPathlabUIOverlayAt(

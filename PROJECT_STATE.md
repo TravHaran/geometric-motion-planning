@@ -88,6 +88,7 @@ Completed:
 - Cohesive rounded UI controls, vector icons, hover/pressed feedback, and
   responsive sidebar spacing
 - Contextual screen-space Help / Controls overlay with modal input blocking
+- Contextual control availability and truthful planner-status feedback
 
 Current demos:
 

@@ -760,6 +760,7 @@ void drawCheckboxRow(
     const sf::Font& font,
     const std::string& label,
     bool checked,
+    bool enabled,
     float panelX,
     float y,
     const sf::Color& previewColor
@@ -773,7 +774,11 @@ void drawCheckboxRow(
         sf::Mouse::getPosition(window);
 
     const bool hovered =
+        enabled
+        &&
         containsPoint(rowBounds, mousePosition);
+
+    const bool visiblyChecked = enabled && checked;
 
     if(hovered){
         drawRoundedSurface(
@@ -802,12 +807,16 @@ void drawCheckboxRow(
         window,
         checkboxBounds,
         3.0f,
-        checked
+        !enabled
+            ? sf::Color(27, 30, 36)
+            : visiblyChecked
             ? ACCENT
             : hovered
                 ? CONTROL_HOVER
                 : CONTROL,
-        checked
+        !enabled
+            ? sf::Color(42, 46, 55)
+            : visiblyChecked
             ? ACCENT
             : hovered
                 ? sf::Color(78, 86, 101)
@@ -815,7 +824,7 @@ void drawCheckboxRow(
     );
 
 
-    if(checked){
+    if(visiblyChecked){
         sf::VertexArray checkmark(sf::PrimitiveType::LineStrip);
 
         checkmark.append(
@@ -848,9 +857,11 @@ void drawCheckboxRow(
         panelX + 44.0f,
         y,
         12,
-        hovered
-            ? TEXT_PRIMARY
-            : TEXT_SECONDARY
+        !enabled
+            ? TEXT_MUTED
+            : hovered
+                ? TEXT_PRIMARY
+                : TEXT_SECONDARY
     );
 
 
@@ -859,7 +870,9 @@ void drawCheckboxRow(
     );
 
     preview.setFillColor(
-        previewColor
+        enabled
+            ? previewColor
+            : sf::Color(74, 79, 89)
     );
 
     preview.setPosition(
@@ -881,6 +894,18 @@ void drawCheckboxRow(
 // Planner status
 // =====================================
 
+sf::Color getPlannerStatusColor(const std::string& status){
+    if(status == "Ready" || status == "Path Found"){
+        return sf::Color(82, 181, 119);
+    }
+
+    if(status == "No Path"){
+        return sf::Color(220, 116, 101);
+    }
+
+    return TEXT_MUTED;
+}
+
 void drawStatusBadge(
     sf::RenderWindow& window,
     const sf::Font& font,
@@ -888,21 +913,7 @@ void drawStatusBadge(
     float panelX,
     float y
 ){
-    sf::Color statusColor =
-        TEXT_MUTED;
-
-
-    if(status == "Path Found"){
-
-        statusColor =
-            SUCCESS;
-    }
-
-    else if(status == "No Path"){
-
-        statusColor =
-            DANGER;
-    }
+    const sf::Color statusColor = getPlannerStatusColor(status);
 
 
     sf::CircleShape indicator(
@@ -1439,14 +1450,20 @@ void drawPlaybackDock(
 // Run planner button
 // =====================================
 
-void drawRunPlannerButton(sf::RenderWindow& window, const sf::Font& font){
+void drawRunPlannerButton(
+    sf::RenderWindow& window,
+    const sf::Font& font,
+    bool enabled
+){
     const sf::FloatRect bounds = getRunPlannerButtonBounds(window.getSize());
 
     const sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
 
-    const bool hovered = containsPoint(bounds, mousePosition);
+    const bool hovered = enabled && containsPoint(bounds, mousePosition);
 
     const bool pressed =
+        enabled
+        &&
         hovered
         &&
         sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
@@ -1455,10 +1472,14 @@ void drawRunPlannerButton(sf::RenderWindow& window, const sf::Font& font){
         window,
         bounds,
         8.0f,
-        getControlFill(hovered, pressed, true),
-        hovered
-            ? sf::Color(ACCENT_HOVER.r, ACCENT_HOVER.g, ACCENT_HOVER.b, 210)
-            : sf::Color(ACCENT_HOVER.r, ACCENT_HOVER.g, ACCENT_HOVER.b, 120)
+        enabled
+            ? getControlFill(hovered, pressed, true)
+            : sf::Color(31, 35, 43),
+        enabled
+            ? hovered
+                ? sf::Color(ACCENT_HOVER.r, ACCENT_HOVER.g, ACCENT_HOVER.b, 210)
+                : sf::Color(ACCENT_HOVER.r, ACCENT_HOVER.g, ACCENT_HOVER.b, 120)
+            : BORDER
     );
 
 
@@ -1466,7 +1487,10 @@ void drawRunPlannerButton(sf::RenderWindow& window, const sf::Font& font){
 
     buttonText.setString("RUN PLANNER");
     buttonText.setCharacterSize(12);
-    buttonText.setFillColor(sf::Color::White);
+    const sf::Color contentColor =
+        enabled ? sf::Color::White : TEXT_MUTED;
+
+    buttonText.setFillColor(contentColor);
 
     const sf::FloatRect textBounds =
         buttonText.getLocalBounds();
@@ -1487,7 +1511,7 @@ void drawRunPlannerButton(sf::RenderWindow& window, const sf::Font& font){
             contentX + iconWidth / 2.0f,
             bounds.position.y + bounds.size.y / 2.0f
         ),
-        sf::Color::White
+        contentColor
     );
 
     buttonText.setPosition(
@@ -1512,7 +1536,8 @@ void drawRunPlannerButton(sf::RenderWindow& window, const sf::Font& font){
 
 void drawTopBar(
     sf::RenderWindow& window,
-    const sf::Font& font
+    const sf::Font& font,
+    const PathlabUIData& data
 ){
     const float windowWidth =
         static_cast<float>(
@@ -1559,43 +1584,29 @@ void drawTopBar(
 
 
     // ---------------------------------
-    // Ready indicator
+    // Planner status
     // ---------------------------------
 
-    sf::CircleShape readyIndicator(
-        4.0f
-    );
+    const sf::Color statusColor =
+        getPlannerStatusColor(data.plannerStatus);
 
-    readyIndicator.setFillColor(
-        SUCCESS
-    );
+    sf::Text statusText(font);
+    statusText.setString(data.plannerStatus);
+    statusText.setCharacterSize(11);
+    statusText.setFillColor(statusColor);
 
-    readyIndicator.setPosition(
-        sf::Vector2f(
-            windowWidth
-                - PATHLAB_SIDE_PANEL_WIDTH
-                - 75.0f,
+    const sf::FloatRect statusTextBounds = statusText.getLocalBounds();
+    const float canvasRight = windowWidth - PATHLAB_SIDE_PANEL_WIDTH;
+    const float statusTextX =
+        canvasRight - 20.0f - statusTextBounds.size.x;
 
-            29.0f
-        )
-    );
+    statusText.setPosition(sf::Vector2f(statusTextX, 22.0f));
+    window.draw(statusText);
 
-    window.draw(
-        readyIndicator
-    );
-
-
-    drawText(
-        window,
-        font,
-        "Ready",
-        windowWidth
-            - PATHLAB_SIDE_PANEL_WIDTH
-            - 60.0f,
-        22.0f,
-        11,
-        TEXT_SECONDARY
-    );
+    sf::CircleShape statusIndicator(4.0f);
+    statusIndicator.setFillColor(statusColor);
+    statusIndicator.setPosition(sf::Vector2f(statusTextX - 15.0f, 29.0f));
+    window.draw(statusIndicator);
 
 
     // ---------------------------------
@@ -1885,6 +1896,7 @@ void drawSidePanel(
         font,
         "Obstacles",
         data.showObstacles,
+        data.hasObstacles,
         panelX,
         y,
         sf::Color(
@@ -1903,6 +1915,7 @@ void drawSidePanel(
         font,
         "Visibility Graph",
         data.showVisibilityGraph,
+        data.hasVisibilityGraph,
         panelX,
         y,
         sf::Color(
@@ -1921,6 +1934,7 @@ void drawSidePanel(
         font,
         "Final Path",
         data.showFinalPath,
+        data.hasFinalPath,
         panelX,
         y,
         WARNING
@@ -1935,6 +1949,7 @@ void drawSidePanel(
             font,
             "Explored Nodes",
             data.showExploredNodes,
+            true,
             panelX,
             y,
             sf::Color(
@@ -2189,7 +2204,8 @@ void drawSidePanel(
 
     drawRunPlannerButton(
         window,
-        font
+        font,
+        data.canRunPlanner
     );
 }
 
@@ -2712,7 +2728,7 @@ void drawPathlabUI(
     const sf::Font& font,
     const PathlabUIData& data
 ){
-    drawTopBar(window, font);
+    drawTopBar(window, font, data);
 
     drawSidePanel(window, font, data);
 
@@ -2746,8 +2762,7 @@ void drawPathlabUI(
 PathlabUIAction handlePathlabUIClick(
     const sf::Vector2i& position,
     const sf::Vector2u& windowSize,
-    bool algorithmDropdownOpen,
-    bool hasSearchTrace
+    const PathlabUIData& data
 ){
     if(containsPoint(getHelpButtonBounds(windowSize), position)){
         return PathlabUIAction::OpenHelpOverlay;
@@ -2766,7 +2781,7 @@ PathlabUIAction handlePathlabUIClick(
     // Open dropdown options
     // =====================================
 
-    if(algorithmDropdownOpen){
+    if(data.algorithmDropdownOpen){
 
         const sf::FloatRect dijkstraBounds =
             getAlgorithmOptionBounds(
@@ -2840,8 +2855,11 @@ PathlabUIAction handlePathlabUIClick(
         obstaclesBounds,
         position
     )){
-        return
-            PathlabUIAction::ToggleObstacles;
+        return data.hasObstacles
+            ? PathlabUIAction::ToggleObstacles
+            : data.algorithmDropdownOpen
+                ? PathlabUIAction::CloseAlgorithmDropdown
+                : PathlabUIAction::None;
     }
 
     const sf::FloatRect visibilityGraphBounds =
@@ -2854,8 +2872,11 @@ PathlabUIAction handlePathlabUIClick(
         visibilityGraphBounds,
         position
     )){
-        return
-            PathlabUIAction::ToggleVisibilityGraph;
+        return data.hasVisibilityGraph
+            ? PathlabUIAction::ToggleVisibilityGraph
+            : data.algorithmDropdownOpen
+                ? PathlabUIAction::CloseAlgorithmDropdown
+                : PathlabUIAction::None;
     }
 
     const sf::FloatRect finalPathBounds =
@@ -2868,11 +2889,14 @@ PathlabUIAction handlePathlabUIClick(
         finalPathBounds,
         position
     )){
-        return
-            PathlabUIAction::ToggleFinalPath;
+        return data.hasFinalPath
+            ? PathlabUIAction::ToggleFinalPath
+            : data.algorithmDropdownOpen
+                ? PathlabUIAction::CloseAlgorithmDropdown
+                : PathlabUIAction::None;
     }
 
-    if(hasSearchTrace){
+    if(data.hasSearchTrace){
         const sf::FloatRect exploredNodesBounds =
             getVisualizationRowBounds(
                 windowSize,
@@ -2884,7 +2908,7 @@ PathlabUIAction handlePathlabUIClick(
         }
     }
 
-    if(hasSearchTrace){
+    if(data.hasSearchTrace){
 
         const sf::FloatRect resetBounds =
             getPlaybackResetBounds(
@@ -2948,7 +2972,7 @@ PathlabUIAction handlePathlabUIClick(
     // Clicking anywhere else closes
     // an open dropdown.
 
-    if(algorithmDropdownOpen){
+    if(data.algorithmDropdownOpen){
 
         return
             PathlabUIAction::CloseAlgorithmDropdown;

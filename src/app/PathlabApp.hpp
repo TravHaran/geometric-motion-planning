@@ -80,6 +80,8 @@ class PathlabApp{
         // =====================================
         // Planning
         // =====================================
+        bool canRunPlanner() const;
+
         void runPlanner();
 
         void invalidatePlanningResult();

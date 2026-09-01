@@ -344,17 +344,13 @@ void PathlabApp::handleMousePressed(
     // UI interaction
     // =====================================
 
-    const bool hasSearchTrace =
-        planningResultAvailable
-        &&
-        !result.expandedNodeOrder.empty();
+    const PathlabUIData uiData = buildUIData();
 
     const PathlabUIAction uiAction =
         handlePathlabUIClick(
             event.position,
             window.getSize(),
-            algorithmDropdownOpen,
-            hasSearchTrace
+            uiData
         );
 
     switch(uiAction){
@@ -557,7 +553,7 @@ void PathlabApp::handleMousePressed(
     if(isPathlabUIOverlayAt(
         event.position,
         window.getSize(),
-        hasSearchTrace
+        uiData.hasSearchTrace
     )){
         return;
     }
@@ -737,7 +733,9 @@ void PathlabApp::handleKeyPressed(
     }
     // Toggle visibility graph
     else if(event.code == sf::Keyboard::Key::V){
-        showVisibilityGraph = !showVisibilityGraph;
+        if(planningResultAvailable && !graph.nodes.empty()){
+            showVisibilityGraph = !showVisibilityGraph;
+        }
     }
     // Run planner
     else if(event.code == sf::Keyboard::Key::Space){
@@ -893,8 +891,12 @@ void PathlabApp::drawPath(){
     window.draw(pathMarkerVertices);
 }
 
+bool PathlabApp::canRunPlanner() const {
+    return start.has_value() && goal.has_value();
+}
+
 void PathlabApp::runPlanner(){
-    if(!start.has_value() || !goal.has_value()) return;
+    if(!canRunPlanner()) return;
 
     // Build visibility graph
     const auto graphBuildStart = std::chrono::steady_clock::now();
@@ -1030,9 +1032,19 @@ PathlabUIData PathlabApp::buildUIData() const
 
     data.algorithmDropdownOpen = algorithmDropdownOpen;
     data.helpOverlayOpen = helpOverlayOpen;
+    data.canRunPlanner = canRunPlanner();
 
-    if(!planningResultAvailable){
-        data.plannerStatus = "Not Run";
+    if(!start.has_value() && !goal.has_value()){
+        data.plannerStatus = "Set Start & Goal";
+    }
+    else if(!start.has_value()){
+        data.plannerStatus = "Set Start";
+    }
+    else if(!goal.has_value()){
+        data.plannerStatus = "Set Goal";
+    }
+    else if(!planningResultAvailable){
+        data.plannerStatus = "Ready";
     }
     else if(result.path.empty()){
         data.plannerStatus = "No Path";
@@ -1062,6 +1074,15 @@ PathlabUIData PathlabApp::buildUIData() const
     data.showObstacles = showObstacles;
     data.showVisibilityGraph = showVisibilityGraph;
     data.showFinalPath = showFinalPath;
+    data.hasObstacles = !obstacles.empty();
+    data.hasVisibilityGraph =
+        planningResultAvailable
+        &&
+        !graph.nodes.empty();
+    data.hasFinalPath =
+        planningResultAvailable
+        &&
+        !result.path.empty();
     data.showExploredNodes = showExploredNodes;
     data.hasSearchTrace =
         planningResultAvailable
