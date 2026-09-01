@@ -396,3 +396,5 @@ sf::FloatRect getHelpCloseButtonBounds(const sf::Vector2u& windowSize){
         sf::Vector2f(34.0f, 34.0f)
     );
 }
+
+}
