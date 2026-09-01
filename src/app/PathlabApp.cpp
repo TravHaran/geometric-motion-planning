@@ -332,6 +332,14 @@ void PathlabApp::handleMousePressed(
 ){
     if(event.button != sf::Mouse::Button::Left) return;
 
+    if(helpOverlayOpen){
+        if(isPathlabHelpCloseButtonAt(event.position, window.getSize())){
+            helpOverlayOpen = false;
+        }
+
+        return;
+    }
+
     // =====================================
     // UI interaction
     // =====================================
@@ -350,6 +358,14 @@ void PathlabApp::handleMousePressed(
         );
 
     switch(uiAction){
+
+        case PathlabUIAction::OpenHelpOverlay:
+
+            helpOverlayOpen = true;
+            algorithmDropdownOpen = false;
+            canvasPanning = false;
+
+            return;
 
         case PathlabUIAction::RunPlanner:
 
@@ -583,6 +599,10 @@ void PathlabApp::handleMouseReleased(
 void PathlabApp::handleMouseMoved(
     const sf::Event::MouseMoved& event
 ){
+    if(helpOverlayOpen){
+        return;
+    }
+
     if(!canvasPanning){
         return;
     }
@@ -609,6 +629,10 @@ void PathlabApp::handleMouseMoved(
 void PathlabApp::handleMouseWheelScrolled(
     const sf::Event::MouseWheelScrolled& event
 ){
+    if(helpOverlayOpen){
+        return;
+    }
+
     if(
         event.wheel != sf::Mouse::Wheel::Vertical
         ||
@@ -645,6 +669,26 @@ void PathlabApp::handleMouseWheelScrolled(
 void PathlabApp::handleKeyPressed(
     const sf::Event::KeyPressed& event
 ){
+    const bool helpShortcut =
+        event.code == sf::Keyboard::Key::Slash
+        && event.shift;
+
+    if(helpShortcut){
+        helpOverlayOpen = !helpOverlayOpen;
+        algorithmDropdownOpen = false;
+        canvasPanning = false;
+
+        return;
+    }
+
+    if(helpOverlayOpen){
+        if(event.code == sf::Keyboard::Key::Escape){
+            helpOverlayOpen = false;
+        }
+
+        return;
+    }
+
     if(
         event.code == sf::Keyboard::Key::Escape && algorithmDropdownOpen
     ){
@@ -978,6 +1022,7 @@ PathlabUIData PathlabApp::buildUIData() const
     }
 
     data.algorithmDropdownOpen = algorithmDropdownOpen;
+    data.helpOverlayOpen = helpOverlayOpen;
 
     if(!planningResultAvailable){
         data.plannerStatus = "Not Run";

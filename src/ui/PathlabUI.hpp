@@ -10,6 +10,7 @@ constexpr float PATHLAB_SIDE_PANEL_WIDTH = 300.0f;
 
 enum class PathlabUIAction{
     None,
+    OpenHelpOverlay,
     RunPlanner,
     ToggleObstacles,
     ToggleVisibilityGraph,
@@ -29,6 +30,8 @@ struct PathlabUIData{
     std::string algorithm;
 
     bool algorithmDropdownOpen = false;
+
+    bool helpOverlayOpen = false;
 
     std::string plannerStatus;
 
@@ -80,4 +83,9 @@ bool isPathlabUIOverlayAt(
     const sf::Vector2i& position,
     const sf::Vector2u& windowSize,
     bool hasSearchTrace
+);
+
+bool isPathlabHelpCloseButtonAt(
+    const sf::Vector2i& position,
+    const sf::Vector2u& windowSize
 );

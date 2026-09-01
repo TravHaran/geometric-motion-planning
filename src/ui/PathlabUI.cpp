@@ -692,6 +692,50 @@ bool containsPoint(const sf::FloatRect& bounds, const sf::Vector2i& position){
         y < bounds.position.y + bounds.size.y;
 }
 
+sf::FloatRect getHelpPanelBounds(const sf::Vector2u& windowSize){
+    constexpr float preferredWidth = 820.0f;
+    constexpr float preferredHeight = 560.0f;
+    constexpr float screenMargin = 20.0f;
+
+    const float windowWidth = static_cast<float>(windowSize.x);
+    const float windowHeight = static_cast<float>(windowSize.y);
+
+    const float panelWidth =
+        std::min(preferredWidth, std::max(0.0f, windowWidth - 2.0f * screenMargin));
+
+    const float panelHeight =
+        std::min(preferredHeight, std::max(0.0f, windowHeight - 2.0f * screenMargin));
+
+    return sf::FloatRect(
+        sf::Vector2f(
+            (windowWidth - panelWidth) / 2.0f,
+            (windowHeight - panelHeight) / 2.0f
+        ),
+        sf::Vector2f(panelWidth, panelHeight)
+    );
+}
+
+sf::FloatRect getHelpButtonBounds(const sf::Vector2u& windowSize){
+    const float windowWidth = static_cast<float>(windowSize.x);
+
+    return sf::FloatRect(
+        sf::Vector2f(windowWidth - 50.0f, 15.0f),
+        sf::Vector2f(34.0f, 34.0f)
+    );
+}
+
+sf::FloatRect getHelpCloseButtonBounds(const sf::Vector2u& windowSize){
+    const sf::FloatRect panelBounds = getHelpPanelBounds(windowSize);
+
+    return sf::FloatRect(
+        sf::Vector2f(
+            panelBounds.position.x + panelBounds.size.x - 50.0f,
+            panelBounds.position.y + 16.0f
+        ),
+        sf::Vector2f(34.0f, 34.0f)
+    );
+}
+
 // =====================================
 // Checkbox-style visualization row
 // =====================================
@@ -1539,6 +1583,50 @@ void drawTopBar(
     );
 
 
+    // ---------------------------------
+    // Help button
+    // ---------------------------------
+
+    const sf::FloatRect helpButtonBounds =
+        getHelpButtonBounds(window.getSize());
+
+    const sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
+    const bool helpButtonHovered =
+        containsPoint(helpButtonBounds, mousePosition);
+    const bool helpButtonPressed =
+        helpButtonHovered
+        && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+
+    drawRoundedSurface(
+        window,
+        helpButtonBounds,
+        CONTROL_RADIUS,
+        getControlFill(helpButtonHovered, helpButtonPressed),
+        helpButtonHovered ? sf::Color(78, 86, 101) : BORDER
+    );
+
+    sf::Text helpButtonText(font);
+    helpButtonText.setString("?");
+    helpButtonText.setCharacterSize(16);
+    helpButtonText.setFillColor(
+        helpButtonHovered ? TEXT_PRIMARY : TEXT_SECONDARY
+    );
+
+    const sf::FloatRect helpTextBounds = helpButtonText.getLocalBounds();
+    helpButtonText.setPosition(
+        sf::Vector2f(
+            helpButtonBounds.position.x
+                + (helpButtonBounds.size.x - helpTextBounds.size.x) / 2.0f
+                - helpTextBounds.position.x,
+            helpButtonBounds.position.y
+                + (helpButtonBounds.size.y - helpTextBounds.size.y) / 2.0f
+                - helpTextBounds.position.y
+                - 1.0f
+        )
+    );
+    window.draw(helpButtonText);
+
+
     drawDivider(
         window,
         0.0f,
@@ -2249,6 +2337,289 @@ void drawBottomBar(
     );
 }
 
+// =====================================
+// Help overlay
+// =====================================
+
+void drawHelpControlRow(
+    sf::RenderWindow& window,
+    const sf::Font& font,
+    const std::string& control,
+    const std::string& description,
+    float x,
+    float y
+){
+    constexpr float chipWidth = 104.0f;
+    constexpr float chipHeight = 21.0f;
+
+    drawRoundedSurface(
+        window,
+        sf::FloatRect(
+            sf::Vector2f(x, y),
+            sf::Vector2f(chipWidth, chipHeight)
+        ),
+        4.0f,
+        CONTROL,
+        BORDER
+    );
+
+    drawText(
+        window,
+        font,
+        control,
+        x + 8.0f,
+        y + 3.0f,
+        9,
+        TEXT_PRIMARY
+    );
+
+    drawText(
+        window,
+        font,
+        description,
+        x + chipWidth + 10.0f,
+        y + 2.0f,
+        11,
+        TEXT_SECONDARY
+    );
+}
+
+void drawHelpSectionHeading(
+    sf::RenderWindow& window,
+    const sf::Font& font,
+    const std::string& heading,
+    float x,
+    float y,
+    float width
+){
+    drawText(window, font, heading, x, y, 10, ACCENT_HOVER);
+    drawDivider(window, x, y + 18.0f, width);
+}
+
+void drawHelpLegendItem(
+    sf::RenderWindow& window,
+    const sf::Font& font,
+    const std::string& label,
+    const sf::Color& color,
+    float x,
+    float y
+){
+    sf::CircleShape marker(4.0f);
+    marker.setPosition(sf::Vector2f(x, y + 5.0f));
+    marker.setFillColor(color);
+    window.draw(marker);
+
+    drawText(
+        window,
+        font,
+        label,
+        x + 16.0f,
+        y,
+        11,
+        TEXT_SECONDARY
+    );
+}
+
+void drawHelpCloseButton(
+    sf::RenderWindow& window
+){
+    const sf::FloatRect bounds =
+        getHelpCloseButtonBounds(window.getSize());
+
+    const sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
+    const bool hovered = containsPoint(bounds, mousePosition);
+    const bool pressed =
+        hovered
+        && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+
+    drawRoundedSurface(
+        window,
+        bounds,
+        CONTROL_RADIUS,
+        getControlFill(hovered, pressed),
+        hovered ? sf::Color(78, 86, 101) : BORDER
+    );
+
+    const sf::Vector2f center = bounds.position + bounds.size / 2.0f;
+    const sf::Color iconColor = hovered ? TEXT_PRIMARY : TEXT_SECONDARY;
+
+    sf::VertexArray closeIcon(sf::PrimitiveType::Lines);
+    closeIcon.append(sf::Vertex{center + sf::Vector2f(-4.5f, -4.5f), iconColor});
+    closeIcon.append(sf::Vertex{center + sf::Vector2f(4.5f, 4.5f), iconColor});
+    closeIcon.append(sf::Vertex{center + sf::Vector2f(4.5f, -4.5f), iconColor});
+    closeIcon.append(sf::Vertex{center + sf::Vector2f(-4.5f, 4.5f), iconColor});
+    window.draw(closeIcon);
+}
+
+void drawHelpOverlay(
+    sf::RenderWindow& window,
+    const sf::Font& font
+){
+    const sf::Vector2u windowSize = window.getSize();
+    const sf::FloatRect panelBounds = getHelpPanelBounds(windowSize);
+
+    sf::RectangleShape backdrop(
+        sf::Vector2f(
+            static_cast<float>(windowSize.x),
+            static_cast<float>(windowSize.y)
+        )
+    );
+    backdrop.setFillColor(sf::Color(5, 7, 11, 205));
+    window.draw(backdrop);
+
+    drawRoundedSurface(
+        window,
+        sf::FloatRect(
+            panelBounds.position + sf::Vector2f(0.0f, 6.0f),
+            panelBounds.size
+        ),
+        12.0f,
+        sf::Color(2, 4, 8, 120),
+        sf::Color::Transparent,
+        0.0f
+    );
+
+    drawRoundedSurface(
+        window,
+        panelBounds,
+        12.0f,
+        sf::Color(24, 27, 34, 252),
+        sf::Color(69, 76, 89)
+    );
+
+    const float contentLeft = panelBounds.position.x + 28.0f;
+    const float contentRight = panelBounds.position.x + panelBounds.size.x - 28.0f;
+    const float columnGap = 34.0f;
+    const float columnWidth =
+        (contentRight - contentLeft - columnGap) / 2.0f;
+    const float rightColumnX = contentLeft + columnWidth + columnGap;
+
+    drawText(
+        window,
+        font,
+        "HELP / CONTROLS",
+        contentLeft,
+        panelBounds.position.y + 18.0f,
+        18,
+        TEXT_PRIMARY
+    );
+
+    drawText(
+        window,
+        font,
+        "Build a scene, run a planner, and inspect its search.",
+        contentLeft,
+        panelBounds.position.y + 43.0f,
+        11,
+        TEXT_MUTED
+    );
+
+    drawText(
+        window,
+        font,
+        "? or Esc to close",
+        panelBounds.position.x + panelBounds.size.x - 166.0f,
+        panelBounds.position.y + 53.0f,
+        10,
+        TEXT_MUTED
+    );
+
+    drawHelpCloseButton(window);
+
+    const float sectionStartY = panelBounds.position.y + 79.0f;
+    constexpr float rowSpacing = 25.0f;
+    constexpr float sectionGap = 15.0f;
+
+    float leftY = sectionStartY;
+
+    drawHelpSectionHeading(
+        window, font, "SCENE EDITING", contentLeft, leftY, columnWidth
+    );
+    leftY += 26.0f;
+
+    drawHelpControlRow(window, font, "LEFT CLICK", "Add obstacle vertex", contentLeft, leftY);
+    leftY += rowSpacing;
+    drawHelpControlRow(window, font, "ENTER", "Finalize polygon (3+ vertices)", contentLeft, leftY);
+    leftY += rowSpacing;
+    drawHelpControlRow(window, font, "S + CLICK", "Set or replace start", contentLeft, leftY);
+    leftY += rowSpacing;
+    drawHelpControlRow(window, font, "G + CLICK", "Set or replace goal", contentLeft, leftY);
+    leftY += rowSpacing;
+    drawHelpControlRow(window, font, "ESC", "Cancel mode or discard draft", contentLeft, leftY);
+    leftY += rowSpacing;
+    drawHelpControlRow(window, font, "R", "Clear scene and planner result", contentLeft, leftY);
+    leftY += rowSpacing + sectionGap;
+
+    drawHelpSectionHeading(
+        window, font, "PLANNER", contentLeft, leftY, columnWidth
+    );
+    leftY += 26.0f;
+
+    drawHelpControlRow(window, font, "SPACE", "Run the selected planner", contentLeft, leftY);
+    leftY += rowSpacing;
+    drawHelpControlRow(window, font, "ALGORITHM", "Choose Dijkstra or A*", contentLeft, leftY);
+    leftY += rowSpacing + sectionGap;
+
+    drawHelpSectionHeading(
+        window, font, "CAMERA", contentLeft, leftY, columnWidth
+    );
+    leftY += 26.0f;
+
+    drawHelpControlRow(window, font, "SCROLL", "Zoom around the pointer", contentLeft, leftY);
+    leftY += rowSpacing;
+    drawHelpControlRow(window, font, "OPT + DRAG", "Pan the canvas", contentLeft, leftY);
+
+    float rightY = sectionStartY;
+
+    drawHelpSectionHeading(
+        window, font, "VISUALIZATION", rightColumnX, rightY, columnWidth
+    );
+    rightY += 26.0f;
+
+    drawHelpControlRow(window, font, "V", "Toggle visibility graph", rightColumnX, rightY);
+    rightY += rowSpacing;
+    drawHelpControlRow(window, font, "SIDEBAR", "Toggle obstacles or final path", rightColumnX, rightY);
+    rightY += rowSpacing;
+    drawHelpControlRow(window, font, "SIDEBAR", "Toggle explored nodes after run", rightColumnX, rightY);
+    rightY += rowSpacing + sectionGap;
+
+    drawHelpSectionHeading(
+        window, font, "SEARCH PLAYBACK", rightColumnX, rightY, columnWidth
+    );
+    rightY += 26.0f;
+
+    drawHelpControlRow(window, font, "RESET", "Return trace to the beginning", rightColumnX, rightY);
+    rightY += rowSpacing;
+    drawHelpControlRow(window, font, "PLAY / PAUSE", "Animate or pause expansions", rightColumnX, rightY);
+    rightY += rowSpacing;
+    drawHelpControlRow(window, font, "STEP", "Advance one expansion", rightColumnX, rightY);
+    rightY += rowSpacing;
+    drawHelpControlRow(window, font, "SPEED", "Cycle 0.25x through 4x", rightColumnX, rightY);
+    rightY += rowSpacing + sectionGap;
+
+    drawHelpSectionHeading(
+        window, font, "VISUAL LEGEND", rightColumnX, rightY, columnWidth
+    );
+    rightY += 27.0f;
+
+    const float legendSecondColumnX = rightColumnX + columnWidth * 0.52f;
+
+    drawHelpLegendItem(window, font, "Start", SUCCESS, rightColumnX, rightY);
+    drawHelpLegendItem(window, font, "Goal", DANGER, legendSecondColumnX, rightY);
+    rightY += 23.0f;
+    drawHelpLegendItem(window, font, "Final path", WARNING, rightColumnX, rightY);
+    drawHelpLegendItem(window, font, "Explored", ACCENT, legendSecondColumnX, rightY);
+    rightY += 23.0f;
+    drawHelpLegendItem(
+        window,
+        font,
+        "Current expansion",
+        sf::Color(34, 211, 238),
+        rightColumnX,
+        rightY
+    );
+}
+
 }
 
 bool loadPathlabFont(sf::Font& font){
@@ -2293,6 +2664,10 @@ void drawPathlabUI(
             data
         );
     }
+
+    if(data.helpOverlayOpen){
+        drawHelpOverlay(window, font);
+    }
 }
 
 PathlabUIAction handlePathlabUIClick(
@@ -2301,6 +2676,10 @@ PathlabUIAction handlePathlabUIClick(
     bool algorithmDropdownOpen,
     bool hasSearchTrace
 ){
+    if(containsPoint(getHelpButtonBounds(windowSize), position)){
+        return PathlabUIAction::OpenHelpOverlay;
+    }
+
     const sf::FloatRect selectorBounds =
         getAlgorithmSelectorBounds(
             windowSize
@@ -2514,4 +2893,14 @@ bool isPathlabUIOverlayAt(
             getPlaybackDockBounds(windowSize),
             position
         );
+}
+
+bool isPathlabHelpCloseButtonAt(
+    const sf::Vector2i& position,
+    const sf::Vector2u& windowSize
+){
+    return containsPoint(
+        getHelpCloseButtonBounds(windowSize),
+        position
+    );
 }

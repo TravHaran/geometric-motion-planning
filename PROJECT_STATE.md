@@ -86,6 +86,7 @@ Completed:
 - Canvas camera with cursor-centered zoom and Option-drag panning
 - Cohesive rounded UI controls, vector icons, hover/pressed feedback, and
   responsive sidebar spacing
+- Contextual screen-space Help / Controls overlay with modal input blocking
 
 Current demos:
 

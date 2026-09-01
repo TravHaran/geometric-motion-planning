@@ -62,6 +62,7 @@ and playback controls are operated with the left mouse button.
 | Place or replace the start | Press `S`, then left-click the canvas |
 | Place or replace the goal | Press `G`, then left-click the canvas |
 | Cancel placement or discard an unfinished obstacle | `Esc` |
+| Open or close Help | Click the top-bar **?** button or press `?` |
 | Select a planner | Choose **Dijkstra** or **A\*** from the Algorithm selector |
 | Run the selected planner | Click **Run Planner** or press `Space` |
 | Reset the complete scene | `R` |

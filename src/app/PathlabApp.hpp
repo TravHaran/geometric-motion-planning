@@ -189,6 +189,8 @@ class PathlabApp{
 
         bool algorithmDropdownOpen = false;
 
+        bool helpOverlayOpen = false;
+
         bool planningResultAvailable = false;
 
         bool showObstacles = true;
