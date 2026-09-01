@@ -336,12 +336,17 @@ void PathlabApp::handleMousePressed(
     // UI interaction
     // =====================================
 
+    const bool hasSearchTrace =
+        planningResultAvailable
+        &&
+        !result.expandedNodeOrder.empty();
+
     const PathlabUIAction uiAction =
         handlePathlabUIClick(
             event.position,
             window.getSize(),
             algorithmDropdownOpen,
-            planningResultAvailable
+            hasSearchTrace
         );
 
     switch(uiAction){
@@ -524,6 +529,14 @@ void PathlabApp::handleMousePressed(
         case PathlabUIAction::None:
 
             break;
+    }
+
+    if(isPathlabUIOverlayAt(
+        event.position,
+        window.getSize(),
+        hasSearchTrace
+    )){
+        return;
     }
 
     // =====================================

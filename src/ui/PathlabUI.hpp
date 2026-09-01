@@ -75,3 +75,9 @@ PathlabUIAction handlePathlabUIClick(
     bool algorithmDropdownOpen,
     bool hasSearchTrace
 );
+
+bool isPathlabUIOverlayAt(
+    const sf::Vector2i& position,
+    const sf::Vector2u& windowSize,
+    bool hasSearchTrace
+);

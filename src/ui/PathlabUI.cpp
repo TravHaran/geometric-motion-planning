@@ -1,5 +1,6 @@
 #include "PathlabUI.hpp"
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <iomanip>
@@ -208,20 +209,44 @@ sf::FloatRect getRunPlannerButtonBounds(const sf::Vector2u& windowSize){
 sf::FloatRect getPlaybackDockBounds(
     const sf::Vector2u& windowSize
 ){
-    const sf::FloatRect runBounds =
-        getRunPlannerButtonBounds(
-            windowSize
+    constexpr float preferredWidth = 440.0f;
+    constexpr float horizontalMargin = 16.0f;
+    constexpr float dockHeight = 78.0f;
+    constexpr float bottomGap = 24.0f;
+
+    const float windowWidth =
+        static_cast<float>(windowSize.x);
+
+    const float windowHeight =
+        static_cast<float>(windowSize.y);
+
+    const float canvasWidth =
+        std::max(
+            0.0f,
+            windowWidth - PATHLAB_SIDE_PANEL_WIDTH
+        );
+
+    const float dockWidth =
+        std::min(
+            preferredWidth,
+            std::max(
+                0.0f,
+                canvasWidth - horizontalMargin * 2.0f
+            )
         );
 
 
     return sf::FloatRect(
         sf::Vector2f(
-            runBounds.position.x,
-            runBounds.position.y - 48.0f
+            (canvasWidth - dockWidth) / 2.0f,
+            windowHeight
+                - PATHLAB_BOTTOM_BAR_HEIGHT
+                - bottomGap
+                - dockHeight
         ),
         sf::Vector2f(
-            runBounds.size.x,
-            38.0f
+            dockWidth,
+            dockHeight
         )
     );
 }
@@ -237,12 +262,12 @@ sf::FloatRect getPlaybackResetBounds(
 
     return sf::FloatRect(
         sf::Vector2f(
-            dock.position.x,
-            dock.position.y
+            dock.position.x + 14.0f,
+            dock.position.y + 12.0f
         ),
         sf::Vector2f(
-            38.0f,
-            dock.size.y
+            44.0f,
+            28.0f
         )
     );
 }
@@ -259,15 +284,12 @@ sf::FloatRect getPlaybackStepBounds(
 
     return sf::FloatRect(
         sf::Vector2f(
-            dock.position.x
-                + dock.size.x
-                - 38.0f,
-
-            dock.position.y
+            dock.position.x + 122.0f,
+            dock.position.y + 12.0f
         ),
         sf::Vector2f(
-            38.0f,
-            dock.size.y
+            44.0f,
+            28.0f
         )
     );
 }
@@ -283,15 +305,12 @@ sf::FloatRect getPlaybackToggleBounds(
 
     return sf::FloatRect(
         sf::Vector2f(
-            dock.position.x
-                + dock.size.x / 2.0f
-                - 19.0f,
-
-            dock.position.y
+            dock.position.x + 68.0f,
+            dock.position.y + 12.0f
         ),
         sf::Vector2f(
-            38.0f,
-            dock.size.y
+            44.0f,
+            28.0f
         )
     );
 }
@@ -307,15 +326,12 @@ sf::FloatRect getPlaybackSpeedBounds(
 
     return sf::FloatRect(
         sf::Vector2f(
-            dock.position.x
-                + dock.size.x
-                - 84.0f,
-
-            dock.position.y
+            dock.position.x + 178.0f,
+            dock.position.y + 12.0f
         ),
         sf::Vector2f(
-            42.0f,
-            dock.size.y
+            58.0f,
+            28.0f
         )
     );
 }
@@ -782,6 +798,88 @@ void drawAlgorithmDropdown(
 // Playback Dock
 // =====================================
 
+void drawPlaybackButton(
+    sf::RenderWindow& window,
+    const sf::Font& font,
+    const sf::FloatRect& bounds,
+    const std::string& label,
+    bool hovered,
+    bool active,
+    bool accentText = false
+){
+    sf::RectangleShape button(bounds.size);
+
+    button.setPosition(bounds.position);
+
+    if(active){
+        button.setFillColor(
+            sf::Color(
+                ACCENT.r,
+                ACCENT.g,
+                ACCENT.b,
+                190
+            )
+        );
+    } else if(hovered){
+        button.setFillColor(
+            sf::Color(
+                CONTROL_HOVER.r,
+                CONTROL_HOVER.g,
+                CONTROL_HOVER.b,
+                245
+            )
+        );
+    } else {
+        button.setFillColor(
+            sf::Color(
+                CONTROL.r,
+                CONTROL.g,
+                CONTROL.b,
+                220
+            )
+        );
+    }
+
+    button.setOutlineThickness(1.0f);
+    button.setOutlineColor(
+        active
+            ? sf::Color(ACCENT_HOVER.r, ACCENT_HOVER.g, ACCENT_HOVER.b, 180)
+            : sf::Color(BORDER.r, BORDER.g, BORDER.b, 180)
+    );
+
+    window.draw(button);
+
+
+    sf::Text buttonText(font);
+
+    buttonText.setString(label);
+    buttonText.setCharacterSize(11);
+    buttonText.setFillColor(
+        active
+            ? sf::Color::White
+            : accentText
+                ? ACCENT_HOVER
+                : TEXT_SECONDARY
+    );
+
+    const sf::FloatRect textBounds =
+        buttonText.getLocalBounds();
+
+    buttonText.setPosition(
+        sf::Vector2f(
+            bounds.position.x
+                + (bounds.size.x - textBounds.size.x) / 2.0f
+                - textBounds.position.x,
+            bounds.position.y
+                + (bounds.size.y - textBounds.size.y) / 2.0f
+                - textBounds.position.y
+                - 1.0f
+        )
+    );
+
+    window.draw(buttonText);
+}
+
 void drawPlaybackDock(
     sf::RenderWindow& window,
     const sf::Font& font,
@@ -793,6 +891,19 @@ void drawPlaybackDock(
         );
 
 
+    sf::RectangleShape shadow(dock.size);
+
+    shadow.setPosition(
+        dock.position + sf::Vector2f(0.0f, 4.0f)
+    );
+
+    shadow.setFillColor(
+        sf::Color(4, 6, 10, 105)
+    );
+
+    window.draw(shadow);
+
+
     sf::RectangleShape background(
         dock.size
     );
@@ -802,7 +913,7 @@ void drawPlaybackDock(
     );
 
     background.setFillColor(
-        CONTROL
+        sf::Color(24, 28, 35, 235)
     );
 
     background.setOutlineThickness(
@@ -810,7 +921,7 @@ void drawPlaybackDock(
     );
 
     background.setOutlineColor(
-        BORDER
+        sf::Color(83, 91, 105, 175)
     );
 
     window.draw(
@@ -818,15 +929,57 @@ void drawPlaybackDock(
     );
 
 
-    // Reset
-    drawText(
+    const sf::Vector2i mousePosition =
+        sf::Mouse::getPosition(window);
+
+    const sf::FloatRect resetBounds =
+        getPlaybackResetBounds(window.getSize());
+
+    const sf::FloatRect toggleBounds =
+        getPlaybackToggleBounds(window.getSize());
+
+    const sf::FloatRect stepBounds =
+        getPlaybackStepBounds(window.getSize());
+
+    const sf::FloatRect speedBounds =
+        getPlaybackSpeedBounds(window.getSize());
+
+
+    drawPlaybackButton(
         window,
         font,
+        resetBounds,
         "|<",
-        dock.position.x + 11.0f,
-        dock.position.y + 9.0f,
-        11,
-        TEXT_SECONDARY
+        containsPoint(resetBounds, mousePosition),
+        false
+    );
+
+    drawPlaybackButton(
+        window,
+        font,
+        toggleBounds,
+        data.playbackPlaying ? "||" : ">",
+        containsPoint(toggleBounds, mousePosition),
+        data.playbackPlaying
+    );
+
+    drawPlaybackButton(
+        window,
+        font,
+        stepBounds,
+        ">|",
+        containsPoint(stepBounds, mousePosition),
+        false
+    );
+
+    drawPlaybackButton(
+        window,
+        font,
+        speedBounds,
+        data.playbackSpeed,
+        containsPoint(speedBounds, mousePosition),
+        false,
+        true
     );
 
 
@@ -845,71 +998,38 @@ void drawPlaybackDock(
         window,
         font,
         "SEARCH PLAYBACK",
-        dock.position.x + 52.0f,
-        dock.position.y + 5.0f,
+        dock.position.x + dock.size.x - 111.0f,
+        dock.position.y + 20.0f,
         9,
         TEXT_MUTED
     );
 
 
-    drawText(
-        window,
-        font,
-        progress,
-        dock.position.x + 52.0f,
-        dock.position.y + 19.0f,
-        10,
-        TEXT_PRIMARY
-    );
-
-    drawText(
-        window,
-        font,
-        data.playbackPlaying
-            ? "||"
-            : ">",
-        dock.position.x
-            + dock.size.x / 2.0f
-            - 4.0f,
-        dock.position.y + 9.0f,
-        11,
-        ACCENT
-    );
-
-    drawText(
-        window,
-        font,
-        data.playbackSpeed,
-        dock.position.x
-            + dock.size.x
-            - 78.0f,
-        dock.position.y + 9.0f,
-        10,
-        ACCENT
-    );
-
     const float progressRatio =
         data.playbackTotal > 0
-            ? static_cast<float>(
-                data.playbackIndex
-            )
-            / static_cast<float>(
-                data.playbackTotal
+            ? std::min(
+                1.0f,
+                static_cast<float>(
+                    data.playbackIndex
+                )
+                / static_cast<float>(
+                    data.playbackTotal
+                )
             )
             : 0.0f;
 
 
     const float barX =
-        dock.position.x + 52.0f;
+        dock.position.x + 14.0f;
 
     const float barY =
-        dock.position.y + 31.0f;
+        dock.position.y + 58.0f;
 
     const float barWidth =
-        dock.size.x - 150.0f;
+        dock.size.x - 92.0f;
 
     constexpr float barHeight =
-        2.0f;
+        3.0f;
 
 
     sf::RectangleShape progressBackground(
@@ -958,18 +1078,26 @@ void drawPlaybackDock(
     );
 
 
-    // Step forward
-    drawText(
-        window,
-        font,
-        ">|",
-        dock.position.x
-            + dock.size.x
-            - 27.0f,
-        dock.position.y + 9.0f,
-        11,
-        TEXT_SECONDARY
+    sf::Text progressText(font);
+
+    progressText.setString(progress);
+    progressText.setCharacterSize(10);
+    progressText.setFillColor(TEXT_PRIMARY);
+
+    const sf::FloatRect progressTextBounds =
+        progressText.getLocalBounds();
+
+    progressText.setPosition(
+        sf::Vector2f(
+            dock.position.x
+                + dock.size.x
+                - 14.0f
+                - progressTextBounds.size.x,
+            dock.position.y + 50.0f
+        )
     );
+
+    window.draw(progressText);
 }
 
 // =====================================
@@ -1826,6 +1954,8 @@ void drawPathlabUI(
 
     drawSidePanel(window, font, data);
 
+    drawBottomBar(window, font);
+
     if(data.algorithmDropdownOpen){
 
         drawAlgorithmDropdown(
@@ -1843,8 +1973,6 @@ void drawPathlabUI(
             data
         );
     }
-
-    drawBottomBar(window, font);
 }
 
 PathlabUIAction handlePathlabUIClick(
@@ -2054,3 +2182,16 @@ PathlabUIAction handlePathlabUIClick(
         PathlabUIAction::None;
 }
 
+bool isPathlabUIOverlayAt(
+    const sf::Vector2i& position,
+    const sf::Vector2u& windowSize,
+    bool hasSearchTrace
+){
+    return
+        hasSearchTrace
+        &&
+        containsPoint(
+            getPlaybackDockBounds(windowSize),
+            position
+        );
+}
