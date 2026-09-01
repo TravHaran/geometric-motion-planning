@@ -140,7 +140,8 @@ Run the complete regression suite from the repository root:
 
 This builds and runs the geometry, graph, BFS, Dijkstra, A*, and PATHLAB UI
 test executables. The mathematical and planning layers remain independent of
-SFML.
+SFML. Tests are registered with CTest, so they can also be run from a configured
+build directory with `ctest --output-on-failure`.
 
 ## Project structure
 

@@ -1,400 +1,323 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(GeometricMotionPlanning)
+project(GeometricMotionPlanning LANGUAGES CXX)
 
-# ---------------------------------
-# C++ configuration
-# ---------------------------------
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-# ---------------------------------
-# Find SFML
-# ---------------------------------
+option(PATHLAB_ENABLE_WARNINGS "Enable compiler warnings for PATHLAB targets" ON)
+
+if(PATHLAB_ENABLE_WARNINGS)
+    if(MSVC)
+        add_compile_options(/W4)
+    else()
+        add_compile_options(
+            -Wall
+            -Wextra
+            -Wpedantic
+            -Wconversion
+            -Wshadow
+        )
+    endif()
+endif()
+
 find_package(
     SFML 3
     REQUIRED
     COMPONENTS Graphics Window System
 )
+
 # ---------------------------------
-# demo 1a
+# Core project libraries
+# ---------------------------------
+
+add_library(
+    pathlab_geometry
+    src/geometry/Geometry.cpp
+    src/geometry/Triangulation.cpp
+)
+
+target_include_directories(
+    pathlab_geometry
+    PUBLIC
+    src
+)
+
+add_library(
+    pathlab_graph
+    src/graph/VisibilityGraph.cpp
+)
+
+target_include_directories(
+    pathlab_graph
+    PUBLIC
+    src
+)
+
+target_link_libraries(
+    pathlab_graph
+    PUBLIC
+    pathlab_geometry
+)
+
+add_library(
+    pathlab_planners
+    src/planners/AStar.cpp
+    src/planners/BFS.cpp
+    src/planners/Dijkstra.cpp
+)
+
+target_include_directories(
+    pathlab_planners
+    PUBLIC
+    src
+)
+
+add_library(
+    pathlab_visualization
+    src/visualization/DemoPanel.cpp
+    src/visualization/Renderer.cpp
+)
+
+target_include_directories(
+    pathlab_visualization
+    PUBLIC
+    src
+)
+
+target_link_libraries(
+    pathlab_visualization
+    PUBLIC
+    SFML::Graphics
+    SFML::Window
+    SFML::System
+)
+
+add_library(
+    pathlab_ui
+    src/ui/PathlabUI.cpp
+)
+
+target_include_directories(
+    pathlab_ui
+    PUBLIC
+    src
+)
+
+target_link_libraries(
+    pathlab_ui
+    PUBLIC
+    SFML::Graphics
+    SFML::Window
+    SFML::System
+)
+
+function(copy_pathlab_assets target)
+    add_custom_command(
+        TARGET ${target}
+        POST_BUILD
+        COMMAND
+            ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/assets"
+            "$<TARGET_FILE_DIR:${target}>/assets"
+    )
+endfunction()
+
+# ---------------------------------
+# Permanent milestone demos
 # ---------------------------------
 
 add_executable(
     demo_1a
     demos/demo_1a_segment_intersection.cpp
-    src/geometry/Geometry.cpp
-    src/visualization/Renderer.cpp
-)
-
-target_include_directories(
-    demo_1a
-    PRIVATE
-    src
 )
 
 target_link_libraries(
     demo_1a
     PRIVATE
-    SFML::Graphics
-    SFML::Window
-    SFML::System
+    pathlab_geometry
+    pathlab_visualization
 )
 
-# ---------------------------------
-# demo 1b
-# ---------------------------------
 add_executable(
     demo_1b
     demos/demo_1b_point_in_polygon.cpp
-    src/geometry/Geometry.cpp
-    src/visualization/Renderer.cpp
-)
-
-target_include_directories(
-    demo_1b
-    PRIVATE
-    src
 )
 
 target_link_libraries(
     demo_1b
     PRIVATE
-    SFML::Graphics
-    SFML::Window
-    SFML::System
+    pathlab_geometry
+    pathlab_visualization
 )
 
-# ---------------------------------
-# demo 1c
-# ---------------------------------
 add_executable(
     demo_1c
-
     demos/demo_1c_path_collision.cpp
-    src/geometry/Geometry.cpp
-    src/visualization/Renderer.cpp
-)
-
-target_include_directories(
-    demo_1c
-    PRIVATE
-    src
 )
 
 target_link_libraries(
     demo_1c
     PRIVATE
-    SFML::Graphics
-    SFML::Window
-    SFML::System
+    pathlab_geometry
+    pathlab_visualization
 )
-
-# ---------------------------------
-# demo 2a
-# ---------------------------------
 
 add_executable(
     demo_2a
     demos/demo_2a_visibility_graph.cpp
-    src/graph/VisibilityGraph.cpp
-    src/geometry/Geometry.cpp
-    src/visualization/Renderer.cpp
-)
-
-target_include_directories(
-    demo_2a
-    PRIVATE
-    src
 )
 
 target_link_libraries(
     demo_2a
     PRIVATE
-    SFML::Graphics
-    SFML::Window
-    SFML::System
+    pathlab_graph
+    pathlab_visualization
 )
-
-
-# ---------------------------------
-# demo 2b
-# ---------------------------------
 
 add_executable(
     demo_2b
-
     demos/demo_2b_dijkstra.cpp
-    src/graph/VisibilityGraph.cpp
-    src/geometry/Geometry.cpp
-    src/visualization/Renderer.cpp
-    src/planners/Dijkstra.cpp
-)
-
-target_include_directories(
-    demo_2b
-    PRIVATE
-    src
 )
 
 target_link_libraries(
     demo_2b
     PRIVATE
-    SFML::Graphics
-    SFML::Window
-    SFML::System
+    pathlab_graph
+    pathlab_planners
+    pathlab_visualization
 )
-
-# ---------------------------------
-# demo 2c
-# ---------------------------------
 
 add_executable(
     demo_2c
-
     demos/demo_2c_interactive_planner.cpp
-    src/geometry/Geometry.cpp
-    src/visualization/Renderer.cpp
-    src/graph/VisibilityGraph.cpp
-    src/planners/Dijkstra.cpp
-    src/visualization/DemoPanel.cpp
-)
-
-target_include_directories(
-    demo_2c
-    PRIVATE
-    src
 )
 
 target_link_libraries(
     demo_2c
     PRIVATE
-    SFML::Graphics
-    SFML::Window
-    SFML::System
+    pathlab_graph
+    pathlab_planners
+    pathlab_visualization
 )
 
-add_custom_command(
-    TARGET demo_2c
-    POST_BUILD
-
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/assets"
-        "$<TARGET_FILE_DIR:demo_2c>/assets"
-)
-
-# ---------------------------------
-# demo 2d - interactive Dijkstra/A*
-# ---------------------------------
+copy_pathlab_assets(demo_2c)
 
 add_executable(
     demo_2d
-
     demos/demo_2d_interactive_planner.cpp
-
-    src/geometry/Geometry.cpp
-
-    src/graph/VisibilityGraph.cpp
-
-    src/planners/Dijkstra.cpp
-    src/planners/AStar.cpp
-
-    src/visualization/Renderer.cpp
-    src/visualization/DemoPanel.cpp
-)
-
-target_include_directories(
-    demo_2d
-    PRIVATE
-    src
 )
 
 target_link_libraries(
     demo_2d
     PRIVATE
-    SFML::Graphics
-    SFML::Window
-    SFML::System
+    pathlab_graph
+    pathlab_planners
+    pathlab_visualization
 )
 
-add_custom_command(
-    TARGET demo_2d
-    POST_BUILD
-
-    COMMAND
-        ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/assets
-        $<TARGET_FILE_DIR:demo_2d>/assets
-)
-
-# ---------------------------------
-# demo 2e - PATHLAB
-# ---------------------------------
+copy_pathlab_assets(demo_2d)
 
 add_executable(
     demo_2e
-
     demos/demo_2e_pathlab.cpp
-
     src/app/PathlabApp.cpp
-
-    src/geometry/Geometry.cpp
-
-    src/geometry/Triangulation.cpp
-
-    src/graph/VisibilityGraph.cpp
-
-    src/planners/BFS.cpp
-
-    src/planners/Dijkstra.cpp
-
-    src/planners/AStar.cpp
-
-    src/visualization/Renderer.cpp
-
-    src/ui/PathlabUI.cpp
-)
-
-target_include_directories(
-    demo_2e
-    PRIVATE
-    src
 )
 
 target_link_libraries(
     demo_2e
     PRIVATE
-    SFML::Graphics
-    SFML::Window
-    SFML::System
+    pathlab_graph
+    pathlab_planners
+    pathlab_ui
+    pathlab_visualization
 )
 
-add_custom_command(
-    TARGET demo_2e
-    POST_BUILD
-
-    COMMAND
-        ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/assets
-        $<TARGET_FILE_DIR:demo_2e>/assets
-)
+copy_pathlab_assets(demo_2e)
 
 # ---------------------------------
-# Geometry unit tests
+# Regression tests
 # ---------------------------------
+
+enable_testing()
 
 add_executable(
     geometry_tests
-
     tests/geometry_tests.cpp
-    src/geometry/Geometry.cpp
-    src/geometry/Triangulation.cpp
 )
 
-target_include_directories(
+target_link_libraries(
     geometry_tests
     PRIVATE
-    src
+    pathlab_geometry
 )
 
-# ---------------------------------
-# Graph unit tests
-# ---------------------------------
+add_test(NAME geometry COMMAND geometry_tests)
 
 add_executable(
     graph_tests
-
     tests/graph_tests.cpp
-    src/graph/VisibilityGraph.cpp
-    src/geometry/Geometry.cpp
 )
 
-target_include_directories(
+target_link_libraries(
     graph_tests
     PRIVATE
-    src
+    pathlab_graph
 )
 
-# ---------------------------------
-# BFS unit tests
-# ---------------------------------
+add_test(NAME graph COMMAND graph_tests)
 
 add_executable(
     bfs_tests
-
     tests/bfs_tests.cpp
-
-    src/planners/BFS.cpp
-    src/planners/Dijkstra.cpp
 )
 
-target_include_directories(
+target_link_libraries(
     bfs_tests
     PRIVATE
-    src
+    pathlab_planners
 )
 
-
-# ---------------------------------
-# Dijkstra unit tests
-# ---------------------------------
+add_test(NAME bfs COMMAND bfs_tests)
 
 add_executable(
     dijkstra_tests
-
     tests/dijkstra_tests.cpp
-    src/planners/Dijkstra.cpp
-    src/graph/VisibilityGraph.cpp
-    src/geometry/Geometry.cpp
 )
 
-target_include_directories(
+target_link_libraries(
     dijkstra_tests
     PRIVATE
-    src
+    pathlab_graph
+    pathlab_planners
 )
 
-# ---------------------------------
-# AStar unit tests
-# ---------------------------------
+add_test(NAME dijkstra COMMAND dijkstra_tests)
 
 add_executable(
     astar_tests
-
     tests/astar_tests.cpp
-    src/planners/AStar.cpp
-    src/planners/Dijkstra.cpp
-    src/graph/VisibilityGraph.cpp
-    src/geometry/Geometry.cpp
 )
 
-target_include_directories(
+target_link_libraries(
     astar_tests
     PRIVATE
-    src
+    pathlab_graph
+    pathlab_planners
 )
 
-# ---------------------------------
-# PATHLAB UI unit tests
-# ---------------------------------
+add_test(NAME astar COMMAND astar_tests)
 
 add_executable(
     pathlab_ui_tests
-
     tests/pathlab_ui_tests.cpp
-    src/ui/PathlabUI.cpp
-)
-
-target_include_directories(
-    pathlab_ui_tests
-    PRIVATE
-    src
 )
 
 target_link_libraries(
     pathlab_ui_tests
     PRIVATE
-    SFML::Graphics
-    SFML::Window
-    SFML::System
+    pathlab_ui
 )
+
+add_test(NAME pathlab_ui COMMAND pathlab_ui_tests)

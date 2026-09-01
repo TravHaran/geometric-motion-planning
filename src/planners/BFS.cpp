@@ -1,28 +1,9 @@
 #include "BFS.hpp"
+#include "PlannerGraph.hpp"
 
 #include <algorithm>
 #include <limits>
-#include <vector>
 #include <queue>
-
-namespace{
-struct Neighbor{
-    std::size_t node;
-    double weight;
-};
-
-std::vector<std::vector<Neighbor>> buildAdjacencyList(const Graph& graph){
-    std::vector<std::vector<Neighbor>> adjacency(graph.nodes.size());
-
-    for(const GraphEdge& edge : graph.edges){
-        adjacency[edge.from].push_back({edge.to, edge.weight});
-        adjacency[edge.to].push_back({edge.from, edge.weight});
-    }
-
-    return adjacency;
-}
-
-}
 
 BFSResult bfs(
     const Graph& graph,
@@ -34,7 +15,8 @@ BFSResult bfs(
 
     const std::size_t nodeCount = graph.nodes.size();
 
-    const std::vector<std::vector<Neighbor>> adjacency = buildAdjacencyList(graph);
+    const planner_detail::AdjacencyList adjacency =
+        planner_detail::buildAdjacencyList(graph);
 
     std::vector<bool> visited(nodeCount, false);
 
@@ -72,7 +54,7 @@ BFSResult bfs(
         expandedNodeOrder.push_back(currentNode);
 
         // explore every neighbor
-        for(const Neighbor& neighbor : adjacency[currentNode]){
+        for(const planner_detail::Neighbor& neighbor : adjacency[currentNode]){
             if(visited[neighbor.node]) continue;
 
             visited[neighbor.node] = true;

@@ -75,11 +75,6 @@ bool segmentsIntersect(
     const Point& C = s2.a;
     const Point& D = s2.b;
 
-    double o1 = orientation(A, B, C);
-    double o2 = orientation(A, B, D);
-    double o3 = orientation(C, D, A);
-    double o4 = orientation(C, D, B);
-    
     // 1. General crossing case
     if(segmentsProperlyIntersect(s1, s2)) return true;
 
@@ -284,7 +279,7 @@ bool isVisible(
             // the region before the vertex needs to be checked.
             // this was already checked by the t > 0.0 block above.
             if(t < 1.0){
-                double afterT = std::max(1.0, t+SAMPLE_DELTA);
+                double afterT = std::min(1.0, t+SAMPLE_DELTA);
 
                 Point after = pointAtSegmentParameter(a, b, afterT);
 

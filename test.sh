@@ -5,18 +5,13 @@ set -e
 PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="$PROJECT_ROOT/build"
 
-mkdir -p "$BUILD_DIR"
-cd "$BUILD_DIR"
+cmake \
+    -S "$PROJECT_ROOT" \
+    -B "$BUILD_DIR" \
+    -DCMAKE_BUILD_TYPE=Debug
 
-if [ ! -f "CMakeCache.txt" ]; then
-    cmake ..
-fi
+cmake --build "$BUILD_DIR"
 
-cmake --build .
-
-./geometry_tests
-./graph_tests
-./bfs_tests
-./dijkstra_tests
-./astar_tests
-./pathlab_ui_tests
+ctest \
+    --test-dir "$BUILD_DIR" \
+    --output-on-failure

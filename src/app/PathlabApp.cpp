@@ -1,7 +1,12 @@
 #include "PathlabApp.hpp"
 
 #include "../visualization/Renderer.hpp"
+#include "../geometry/Segment.hpp"
 #include "../geometry/Triangulation.hpp"
+#include "../graph/VisibilityGraph.hpp"
+#include "../planners/AStar.hpp"
+#include "../planners/BFS.hpp"
+#include "../planners/Dijkstra.hpp"
 
 #include <array>
 #include <optional>
@@ -1151,22 +1156,28 @@ PathlabUIData PathlabApp::buildUIData() const
     data.canRunPlanner = canRunPlanner();
 
     if(!start.has_value() && !goal.has_value()){
-        data.plannerStatus = "Set Start & Goal";
+        data.plannerStatus =
+            PathlabPlannerStatus::SetStartAndGoal;
     }
     else if(!start.has_value()){
-        data.plannerStatus = "Set Start";
+        data.plannerStatus =
+            PathlabPlannerStatus::SetStart;
     }
     else if(!goal.has_value()){
-        data.plannerStatus = "Set Goal";
+        data.plannerStatus =
+            PathlabPlannerStatus::SetGoal;
     }
     else if(!planningResultAvailable){
-        data.plannerStatus = "Ready";
+        data.plannerStatus =
+            PathlabPlannerStatus::Ready;
     }
     else if(result.path.empty()){
-        data.plannerStatus = "No Path";
+        data.plannerStatus =
+            PathlabPlannerStatus::NoPath;
     }
     else{
-        data.plannerStatus = "Path Found";
+        data.plannerStatus =
+            PathlabPlannerStatus::PathFound;
     }
 
     data.obstacleCount = obstacles.size();

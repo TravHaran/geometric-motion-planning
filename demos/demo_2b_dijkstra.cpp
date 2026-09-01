@@ -76,15 +76,15 @@ int main()
         drawGraph(window, graph, sf::Color(120, 120, 120));
 
         // Draw obstacle edges.
-        for(const Polygon& obstacle : obstacles){
+        for(const Polygon& currentObstacle : obstacles){
 
-            const std::size_t n = obstacle.vertices.size();
+            const std::size_t n = currentObstacle.vertices.size();
 
             for(std::size_t i = 0; i < n; ++i){
 
                 Segment edge{
-                    obstacle.vertices[i],
-                    obstacle.vertices[(i + 1) % n]
+                    currentObstacle.vertices[i],
+                    currentObstacle.vertices[(i + 1) % n]
                 };
 
                 drawSegment(

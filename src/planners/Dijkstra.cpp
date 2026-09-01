@@ -1,28 +1,9 @@
 #include "Dijkstra.hpp"
+#include "PlannerGraph.hpp"
 
 #include <algorithm>
 #include <limits>
 #include <vector>
-
-namespace{
-
-struct Neighbor{
-    std::size_t node;
-    double weight;
-};
-
-std::vector<std::vector<Neighbor>> buildAdjacencyList(const Graph& graph){
-    std::vector<std::vector<Neighbor>> adjacency(graph.nodes.size());
-
-    for(const GraphEdge& edge : graph.edges){
-        adjacency[edge.from].push_back({edge.to, edge.weight});
-        adjacency[edge.to].push_back({edge.from, edge.weight});
-    }
-
-    return adjacency;
-}
-
-}
 
 /*
  * Dijkstra's Algorithm
@@ -96,8 +77,8 @@ DijkstraResult dijkstra(
     const std::size_t nodeCount =
         graph.nodes.size();
 
-    const std::vector<std::vector<Neighbor>> adjacency =
-        buildAdjacencyList(graph);
+    const planner_detail::AdjacencyList adjacency =
+        planner_detail::buildAdjacencyList(graph);
 
     /*
      * distance[i]
@@ -180,7 +161,7 @@ DijkstraResult dijkstra(
 
         // The graph stores each undirected edge once. The local
         // adjacency list lets this loop visit only incident edges.
-        for(const Neighbor& neighbor : adjacency[currentNode]){
+        for(const planner_detail::Neighbor& neighbor : adjacency[currentNode]){
 
             // No need to relax already-finalized nodes.
             if(visited[neighbor.node]){

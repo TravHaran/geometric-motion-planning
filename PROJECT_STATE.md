@@ -83,6 +83,10 @@ Completed:
 - BFS, Dijkstra, and A* selection and comparison in PATHLAB
 - Data-driven PATHLAB planner selector with indexed UI selection and focused
   selector regression tests
+- Architecture-aligned CMake libraries for geometry, graph, planners,
+  visualization, and UI, with centralized CTest registration
+- Visibility regression coverage for segments that enter obstacle interiors
+  through a vertex and terminate on another boundary edge
 - Cached and batched PATHLAB scene rendering
 - Event-driven, frame-limited PATHLAB application loop
 - Search playback with current-expansion and goal-reached highlighting in a

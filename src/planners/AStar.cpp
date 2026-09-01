@@ -1,4 +1,5 @@
 #include "AStar.hpp"
+#include "PlannerGraph.hpp"
 
 #include <cmath>
 #include <limits>
@@ -6,22 +7,6 @@
 #include <algorithm>
 
 namespace { // we want to keep the euclidean heuristic file local
-
-struct Neighbor{
-    std::size_t node;
-    double weight;
-};
-
-std::vector<std::vector<Neighbor>> buildAdjacencyList(const Graph& graph){
-    std::vector<std::vector<Neighbor>> adjacency(graph.nodes.size());
-
-    for(const GraphEdge& edge : graph.edges){
-        adjacency[edge.from].push_back({edge.to, edge.weight});
-        adjacency[edge.to].push_back({edge.from, edge.weight});
-    }
-
-    return adjacency;
-}
 
 // Euclidean straight-line distance from a node to the goal.
 // This is used as A*'s heuristic h(n).
@@ -93,8 +78,8 @@ AStarResult aStar(
     const std::size_t nodeCount =
         graph.nodes.size();
 
-    const std::vector<std::vector<Neighbor>> adjacency =
-        buildAdjacencyList(graph);
+    const planner_detail::AdjacencyList adjacency =
+        planner_detail::buildAdjacencyList(graph);
 
     // g(n): best known cost from start to each node.
     std::vector<double> distances(
@@ -145,7 +130,7 @@ AStarResult aStar(
 
         // The graph stores each undirected edge once. The local
         // adjacency list lets this loop visit only incident edges.
-        for(const Neighbor& neighbor : adjacency[currentNode]){
+        for(const planner_detail::Neighbor& neighbor : adjacency[currentNode]){
 
             // No need to relax already-finalized nodes.
             if(visited[neighbor.node]){

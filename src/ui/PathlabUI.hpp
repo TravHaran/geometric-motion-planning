@@ -30,6 +30,15 @@ enum class PathlabUIAction{
     CloseAlgorithmDropdown
 };
 
+enum class PathlabPlannerStatus{
+    SetStartAndGoal,
+    SetStart,
+    SetGoal,
+    Ready,
+    NoPath,
+    PathFound
+};
+
 struct PathlabUIInteraction{
     PathlabUIAction action = PathlabUIAction::None;
     std::size_t algorithmIndex = 0;
@@ -55,7 +64,8 @@ struct PathlabUIData{
 
     bool sidebarVisible = true;
 
-    std::string plannerStatus;
+    PathlabPlannerStatus plannerStatus =
+        PathlabPlannerStatus::SetStartAndGoal;
 
     bool canRunPlanner = false;
 

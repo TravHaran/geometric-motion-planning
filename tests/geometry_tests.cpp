@@ -488,6 +488,15 @@ void testIsVisible()
         {4.0, 2.0},
         obstacles
     ));
+
+    // Enters through a vertex and ends on another boundary edge.
+    // The segment interior lies inside the obstacle even though neither
+    // endpoint is strictly inside and neither crossing is proper.
+    assert(!isVisible(
+        {0.0, 0.0},
+        {6.0, 3.0},
+        obstacles
+    ));
 }
 
 void testSegmentParameter()

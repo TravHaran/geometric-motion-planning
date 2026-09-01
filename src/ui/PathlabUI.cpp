@@ -13,12 +13,6 @@ namespace{
 // PATHLAB design system
 // =====================================
 
-const sf::Color BACKGROUND{
-    18,
-    20,
-    24
-};
-
 const sf::Color SURFACE{
     23,
     26,
@@ -1072,13 +1066,43 @@ void drawCheckboxRow(
 // Planner status
 // =====================================
 
-sf::Color getPlannerStatusColor(const std::string& status){
-    if(status == "Ready" || status == "Path Found"){
-        return sf::Color(82, 181, 119);
+const char* getPlannerStatusText(PathlabPlannerStatus status){
+    switch(status){
+        case PathlabPlannerStatus::SetStartAndGoal:
+            return "Set Start & Goal";
+
+        case PathlabPlannerStatus::SetStart:
+            return "Set Start";
+
+        case PathlabPlannerStatus::SetGoal:
+            return "Set Goal";
+
+        case PathlabPlannerStatus::Ready:
+            return "Ready";
+
+        case PathlabPlannerStatus::NoPath:
+            return "No Path";
+
+        case PathlabPlannerStatus::PathFound:
+            return "Path Found";
     }
 
-    if(status == "No Path"){
-        return sf::Color(220, 116, 101);
+    return "";
+}
+
+sf::Color getPlannerStatusColor(PathlabPlannerStatus status){
+    switch(status){
+        case PathlabPlannerStatus::Ready:
+        case PathlabPlannerStatus::PathFound:
+            return sf::Color(82, 181, 119);
+
+        case PathlabPlannerStatus::NoPath:
+            return sf::Color(220, 116, 101);
+
+        case PathlabPlannerStatus::SetStartAndGoal:
+        case PathlabPlannerStatus::SetStart:
+        case PathlabPlannerStatus::SetGoal:
+            return TEXT_MUTED;
     }
 
     return TEXT_MUTED;
@@ -1087,7 +1111,7 @@ sf::Color getPlannerStatusColor(const std::string& status){
 void drawStatusBadge(
     sf::RenderWindow& window,
     const sf::Font& font,
-    const std::string& status,
+    PathlabPlannerStatus status,
     float panelX,
     float y
 ){
@@ -1117,7 +1141,7 @@ void drawStatusBadge(
     drawText(
         window,
         font,
-        status,
+        getPlannerStatusText(status),
         panelX + 36.0f,
         y,
         12,
@@ -1765,8 +1789,11 @@ void drawTopBar(
     const sf::Color statusColor =
         getPlannerStatusColor(data.plannerStatus);
 
+    const char* plannerStatusText =
+        getPlannerStatusText(data.plannerStatus);
+
     sf::Text statusText(font);
-    statusText.setString(data.plannerStatus);
+    statusText.setString(plannerStatusText);
     statusText.setCharacterSize(11);
     statusText.setFillColor(statusColor);
 

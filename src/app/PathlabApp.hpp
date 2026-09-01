@@ -7,11 +7,7 @@
 
 #include "../geometry/Point.hpp"
 #include "../geometry/Polygon.hpp"
-#include "../geometry/Segment.hpp"
-#include "../graph/VisibilityGraph.hpp"
-#include "../planners/BFS.hpp"
-#include "../planners/Dijkstra.hpp"
-#include "../planners/AStar.hpp"
+#include "../graph/Graph.hpp"
 #include "../ui/PathlabUI.hpp"
 
 /**
