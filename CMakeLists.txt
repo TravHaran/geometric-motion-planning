@@ -265,6 +265,16 @@ target_link_libraries(
     SFML::System
 )
 
+add_custom_command(
+    TARGET demo_2e
+    POST_BUILD
+
+    COMMAND
+        ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets
+        $<TARGET_FILE_DIR:demo_2e>/assets
+)
+
 # ---------------------------------
 # Geometry unit tests
 # ---------------------------------
