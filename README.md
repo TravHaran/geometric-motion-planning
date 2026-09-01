@@ -48,7 +48,8 @@ The canvas supports cursor-centered zoom and panning without mixing camera
 logic into the geometry or planner layers. Static canvas, obstacle, graph, and
 path data are cached in batched SFML vertex arrays. Outside active playback,
 the application waits for input instead of continuously redrawing an unchanged
-scene.
+scene. The planner sidebar can be collapsed to reclaim the full canvas width;
+camera state, planner results, and playback remain intact while it is toggled.
 
 ## PATHLAB controls
 
@@ -63,6 +64,7 @@ and playback controls are operated with the left mouse button.
 | Place or replace the goal | Press `G`, then left-click the canvas |
 | Cancel placement or discard an unfinished obstacle | `Esc` |
 | Open or close Help | Click the top-bar **?** button or press `?` |
+| Show or hide the planner sidebar | Click the top-bar sidebar icon or press `Tab` |
 | Load the showcase scene | Click **Load Demo** at the upper-right of the canvas |
 | Select a planner | Choose **Dijkstra** or **A\*** from the Algorithm selector |
 | Run the selected planner | Click **Run Planner** or press `Space` |
@@ -73,7 +75,7 @@ and playback controls are operated with the left mouse button.
 | Toggle expanded nodes | Click **Explored Nodes** after a search trace exists |
 | Pan the canvas | Hold `Option` (`Alt`) and left-drag |
 | Zoom around the pointer | Use the mouse wheel or trackpad scroll gesture over the canvas |
-| Reset the camera | Click **Reset View** at the upper-right of the canvas |
+| Reset the camera | Click **Reset View** at the upper-right of the current usable canvas |
 | Reset search playback | Click the reset control in the playback dock |
 | Play or pause playback | Click the play/pause control in the playback dock |
 | Advance one expansion | Click the step control in the playback dock |

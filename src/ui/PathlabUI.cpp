@@ -317,6 +317,37 @@ void drawChevron(
     window.draw(chevron);
 }
 
+void drawHorizontalChevron(
+    sf::RenderWindow& window,
+    const sf::Vector2f& center,
+    bool pointsRight,
+    const sf::Color& color
+){
+    const float direction = pointsRight ? 1.0f : -1.0f;
+
+    sf::VertexArray chevron(sf::PrimitiveType::LineStrip);
+    chevron.append(
+        sf::Vertex{
+            center + sf::Vector2f(-2.0f * direction, -4.0f),
+            color
+        }
+    );
+    chevron.append(
+        sf::Vertex{
+            center + sf::Vector2f(2.0f * direction, 0.0f),
+            color
+        }
+    );
+    chevron.append(
+        sf::Vertex{
+            center + sf::Vector2f(-2.0f * direction, 4.0f),
+            color
+        }
+    );
+
+    window.draw(chevron);
+}
+
 void drawText(
     sf::RenderWindow& window,
     const sf::Font& font,
@@ -412,6 +443,19 @@ bool useCompactSidebarLayout(const sf::Vector2u& windowSize){
     return windowSize.y < 780;
 }
 
+float getUsableCanvasWidth(
+    const sf::Vector2u& windowSize,
+    bool sidebarVisible
+){
+    const float sidebarWidth =
+        sidebarVisible ? PATHLAB_SIDE_PANEL_WIDTH : 0.0f;
+
+    return std::max(
+        1.0f,
+        static_cast<float>(windowSize.x) - sidebarWidth
+    );
+}
+
 sf::FloatRect getRunPlannerButtonBounds(const sf::Vector2u& windowSize){
     const float windowWidth = static_cast<float>(windowSize.x);
 
@@ -435,11 +479,12 @@ sf::FloatRect getRunPlannerButtonBounds(const sf::Vector2u& windowSize){
     );
 }
 
-sf::FloatRect getResetCameraButtonBounds(const sf::Vector2u& windowSize){
-    const float canvasWidth = std::max(
-        1.0f,
-        static_cast<float>(windowSize.x) - PATHLAB_SIDE_PANEL_WIDTH
-    );
+sf::FloatRect getResetCameraButtonBounds(
+    const sf::Vector2u& windowSize,
+    bool sidebarVisible
+){
+    const float canvasWidth =
+        getUsableCanvasWidth(windowSize, sidebarVisible);
 
     return sf::FloatRect(
         sf::Vector2f(
@@ -450,9 +495,12 @@ sf::FloatRect getResetCameraButtonBounds(const sf::Vector2u& windowSize){
     );
 }
 
-sf::FloatRect getLoadDemoSceneButtonBounds(const sf::Vector2u& windowSize){
+sf::FloatRect getLoadDemoSceneButtonBounds(
+    const sf::Vector2u& windowSize,
+    bool sidebarVisible
+){
     const sf::FloatRect resetCameraBounds =
-        getResetCameraButtonBounds(windowSize);
+        getResetCameraButtonBounds(windowSize, sidebarVisible);
 
     return sf::FloatRect(
         sf::Vector2f(
@@ -464,24 +512,19 @@ sf::FloatRect getLoadDemoSceneButtonBounds(const sf::Vector2u& windowSize){
 }
 
 sf::FloatRect getPlaybackDockBounds(
-    const sf::Vector2u& windowSize
+    const sf::Vector2u& windowSize,
+    bool sidebarVisible
 ){
     constexpr float preferredWidth = 440.0f;
     constexpr float horizontalMargin = 16.0f;
     constexpr float dockHeight = 78.0f;
     constexpr float bottomGap = 24.0f;
 
-    const float windowWidth =
-        static_cast<float>(windowSize.x);
-
     const float windowHeight =
         static_cast<float>(windowSize.y);
 
     const float canvasWidth =
-        std::max(
-            0.0f,
-            windowWidth - PATHLAB_SIDE_PANEL_WIDTH
-        );
+        getUsableCanvasWidth(windowSize, sidebarVisible);
 
     const float dockWidth =
         std::min(
@@ -509,11 +552,13 @@ sf::FloatRect getPlaybackDockBounds(
 }
 
 sf::FloatRect getPlaybackResetBounds(
-    const sf::Vector2u& windowSize
+    const sf::Vector2u& windowSize,
+    bool sidebarVisible
 ){
     const sf::FloatRect dock =
         getPlaybackDockBounds(
-            windowSize
+            windowSize,
+            sidebarVisible
         );
 
 
@@ -531,11 +576,13 @@ sf::FloatRect getPlaybackResetBounds(
 
 
 sf::FloatRect getPlaybackStepBounds(
-    const sf::Vector2u& windowSize
+    const sf::Vector2u& windowSize,
+    bool sidebarVisible
 ){
     const sf::FloatRect dock =
         getPlaybackDockBounds(
-            windowSize
+            windowSize,
+            sidebarVisible
         );
 
 
@@ -552,11 +599,13 @@ sf::FloatRect getPlaybackStepBounds(
 }
 
 sf::FloatRect getPlaybackToggleBounds(
-    const sf::Vector2u& windowSize
+    const sf::Vector2u& windowSize,
+    bool sidebarVisible
 ){
     const sf::FloatRect dock =
         getPlaybackDockBounds(
-            windowSize
+            windowSize,
+            sidebarVisible
         );
 
 
@@ -573,11 +622,13 @@ sf::FloatRect getPlaybackToggleBounds(
 }
 
 sf::FloatRect getPlaybackSpeedBounds(
-    const sf::Vector2u& windowSize
+    const sf::Vector2u& windowSize,
+    bool sidebarVisible
 ){
     const sf::FloatRect dock =
         getPlaybackDockBounds(
-            windowSize
+            windowSize,
+            sidebarVisible
         );
 
 
@@ -748,6 +799,21 @@ sf::FloatRect getHelpButtonBounds(const sf::Vector2u& windowSize){
 
     return sf::FloatRect(
         sf::Vector2f(windowWidth - 50.0f, 15.0f),
+        sf::Vector2f(34.0f, 34.0f)
+    );
+}
+
+sf::FloatRect getSidebarToggleButtonBounds(
+    const sf::Vector2u& windowSize
+){
+    return sf::FloatRect(
+        sf::Vector2f(
+            std::max(
+                14.0f,
+                static_cast<float>(windowSize.x) - 92.0f
+            ),
+            15.0f
+        ),
         sf::Vector2f(34.0f, 34.0f)
     );
 }
@@ -1254,7 +1320,8 @@ void drawPlaybackDock(
 ){
     const sf::FloatRect dock =
         getPlaybackDockBounds(
-            window.getSize()
+            window.getSize(),
+            data.sidebarVisible
         );
 
 
@@ -1285,16 +1352,16 @@ void drawPlaybackDock(
         sf::Mouse::getPosition(window);
 
     const sf::FloatRect resetBounds =
-        getPlaybackResetBounds(window.getSize());
+        getPlaybackResetBounds(window.getSize(), data.sidebarVisible);
 
     const sf::FloatRect toggleBounds =
-        getPlaybackToggleBounds(window.getSize());
+        getPlaybackToggleBounds(window.getSize(), data.sidebarVisible);
 
     const sf::FloatRect stepBounds =
-        getPlaybackStepBounds(window.getSize());
+        getPlaybackStepBounds(window.getSize(), data.sidebarVisible);
 
     const sf::FloatRect speedBounds =
-        getPlaybackSpeedBounds(window.getSize());
+        getPlaybackSpeedBounds(window.getSize(), data.sidebarVisible);
 
     const bool leftPressed =
         sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
@@ -1609,9 +1676,12 @@ void drawTopBar(
     statusText.setFillColor(statusColor);
 
     const sf::FloatRect statusTextBounds = statusText.getLocalBounds();
-    const float canvasRight = windowWidth - PATHLAB_SIDE_PANEL_WIDTH;
+    const sf::FloatRect sidebarToggleBounds =
+        getSidebarToggleButtonBounds(window.getSize());
+
+    const float statusRight = sidebarToggleBounds.position.x - 16.0f;
     const float statusTextX =
-        canvasRight - 20.0f - statusTextBounds.size.x;
+        statusRight - statusTextBounds.size.x;
 
     statusText.setPosition(sf::Vector2f(statusTextX, 22.0f));
     window.draw(statusText);
@@ -1675,12 +1745,58 @@ void drawTopBar(
     );
 }
 
-void drawResetCameraButton(
+void drawSidebarToggleButton(
     sf::RenderWindow& window,
-    const sf::Font& font
+    bool sidebarVisible
 ){
     const sf::FloatRect bounds =
-        getResetCameraButtonBounds(window.getSize());
+        getSidebarToggleButtonBounds(window.getSize());
+
+    const sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
+    const bool hovered = containsPoint(bounds, mousePosition);
+    const bool pressed =
+        hovered
+        && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+
+    drawRoundedSurface(
+        window,
+        bounds,
+        CONTROL_RADIUS,
+        getControlFill(hovered, pressed),
+        hovered ? sf::Color(78, 86, 101) : BORDER
+    );
+
+    const sf::Color iconColor = hovered ? TEXT_PRIMARY : TEXT_SECONDARY;
+    const sf::Vector2f framePosition =
+        bounds.position + sf::Vector2f(8.0f, 9.0f);
+
+    sf::RectangleShape frame(sf::Vector2f(18.0f, 16.0f));
+    frame.setPosition(framePosition);
+    frame.setFillColor(sf::Color::Transparent);
+    frame.setOutlineThickness(1.0f);
+    frame.setOutlineColor(iconColor);
+    window.draw(frame);
+
+    sf::RectangleShape divider(sf::Vector2f(1.0f, 14.0f));
+    divider.setPosition(framePosition + sf::Vector2f(10.0f, 1.0f));
+    divider.setFillColor(iconColor);
+    window.draw(divider);
+
+    drawHorizontalChevron(
+        window,
+        framePosition + sf::Vector2f(14.0f, 8.0f),
+        sidebarVisible,
+        iconColor
+    );
+}
+
+void drawResetCameraButton(
+    sf::RenderWindow& window,
+    const sf::Font& font,
+    bool sidebarVisible
+){
+    const sf::FloatRect bounds =
+        getResetCameraButtonBounds(window.getSize(), sidebarVisible);
 
     const sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
     const bool hovered = containsPoint(bounds, mousePosition);
@@ -1731,10 +1847,11 @@ void drawResetCameraButton(
 
 void drawLoadDemoSceneButton(
     sf::RenderWindow& window,
-    const sf::Font& font
+    const sf::Font& font,
+    bool sidebarVisible
 ){
     const sf::FloatRect bounds =
-        getLoadDemoSceneButtonBounds(window.getSize());
+        getLoadDemoSceneButtonBounds(window.getSize(), sidebarVisible);
 
     const sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
     const bool hovered = containsPoint(bounds, mousePosition);
@@ -2718,6 +2835,8 @@ void drawHelpOverlay(
     drawHelpControlRow(window, font, "OPT + DRAG", "Pan the canvas", contentLeft, leftY);
     leftY += rowSpacing;
     drawHelpControlRow(window, font, "RESET VIEW", "Restore opening camera", contentLeft, leftY);
+    leftY += rowSpacing;
+    drawHelpControlRow(window, font, "TAB", "Show or hide planner sidebar", contentLeft, leftY);
 
     float rightY = sectionStartY;
 
@@ -2793,15 +2912,19 @@ void drawPathlabUI(
 ){
     drawTopBar(window, font, data);
 
-    drawSidePanel(window, font, data);
+    if(data.sidebarVisible){
+        drawSidePanel(window, font, data);
+    }
 
     drawBottomBar(window, font);
 
-    drawResetCameraButton(window, font);
+    drawResetCameraButton(window, font, data.sidebarVisible);
 
-    drawLoadDemoSceneButton(window, font);
+    drawLoadDemoSceneButton(window, font, data.sidebarVisible);
 
-    if(data.algorithmDropdownOpen){
+    drawSidebarToggleButton(window, data.sidebarVisible);
+
+    if(data.sidebarVisible && data.algorithmDropdownOpen){
 
         drawAlgorithmDropdown(
             window,
@@ -2833,11 +2956,24 @@ PathlabUIAction handlePathlabUIClick(
         return PathlabUIAction::OpenHelpOverlay;
     }
 
-    if(containsPoint(getLoadDemoSceneButtonBounds(windowSize), position)){
+    if(containsPoint(
+        getSidebarToggleButtonBounds(windowSize),
+        position
+    )){
+        return PathlabUIAction::ToggleSidebar;
+    }
+
+    if(containsPoint(
+        getLoadDemoSceneButtonBounds(windowSize, data.sidebarVisible),
+        position
+    )){
         return PathlabUIAction::LoadDemoScene;
     }
 
-    if(containsPoint(getResetCameraButtonBounds(windowSize), position)){
+    if(containsPoint(
+        getResetCameraButtonBounds(windowSize, data.sidebarVisible),
+        position
+    )){
         return PathlabUIAction::ResetCamera;
     }
 
@@ -2850,7 +2986,7 @@ PathlabUIAction handlePathlabUIClick(
     // Open dropdown options
     // =====================================
 
-    if(data.algorithmDropdownOpen){
+    if(data.sidebarVisible && data.algorithmDropdownOpen){
 
         const sf::FloatRect dijkstraBounds =
             getAlgorithmOptionBounds(
@@ -2885,7 +3021,7 @@ PathlabUIAction handlePathlabUIClick(
     // Algorithm selector
     // =====================================
 
-    if(containsPoint(
+    if(data.sidebarVisible && containsPoint(
         selectorBounds,
         position
     )){
@@ -2902,7 +3038,7 @@ PathlabUIAction handlePathlabUIClick(
             windowSize
         );
 
-    if(containsPoint(
+    if(data.sidebarVisible && containsPoint(
         runPlannerBounds,
         position
     )){
@@ -2920,7 +3056,7 @@ PathlabUIAction handlePathlabUIClick(
             0
         );
 
-    if(containsPoint(
+    if(data.sidebarVisible && containsPoint(
         obstaclesBounds,
         position
     )){
@@ -2937,7 +3073,7 @@ PathlabUIAction handlePathlabUIClick(
             1
         );
 
-    if(containsPoint(
+    if(data.sidebarVisible && containsPoint(
         visibilityGraphBounds,
         position
     )){
@@ -2954,7 +3090,7 @@ PathlabUIAction handlePathlabUIClick(
             2
         );
 
-    if(containsPoint(
+    if(data.sidebarVisible && containsPoint(
         finalPathBounds,
         position
     )){
@@ -2965,7 +3101,7 @@ PathlabUIAction handlePathlabUIClick(
                 : PathlabUIAction::None;
     }
 
-    if(data.hasSearchTrace){
+    if(data.sidebarVisible && data.hasSearchTrace){
         const sf::FloatRect exploredNodesBounds =
             getVisualizationRowBounds(
                 windowSize,
@@ -2981,7 +3117,8 @@ PathlabUIAction handlePathlabUIClick(
 
         const sf::FloatRect resetBounds =
             getPlaybackResetBounds(
-                windowSize
+                windowSize,
+                data.sidebarVisible
             );
 
 
@@ -2995,7 +3132,8 @@ PathlabUIAction handlePathlabUIClick(
 
         const sf::FloatRect toggleBounds =
             getPlaybackToggleBounds(
-                windowSize
+                windowSize,
+                data.sidebarVisible
             );
 
 
@@ -3009,7 +3147,8 @@ PathlabUIAction handlePathlabUIClick(
 
         const sf::FloatRect speedBounds =
             getPlaybackSpeedBounds(
-                windowSize
+                windowSize,
+                data.sidebarVisible
             );
 
 
@@ -3024,7 +3163,8 @@ PathlabUIAction handlePathlabUIClick(
 
         const sf::FloatRect stepBounds =
             getPlaybackStepBounds(
-                windowSize
+                windowSize,
+                data.sidebarVisible
             );
 
 
@@ -3054,13 +3194,14 @@ PathlabUIAction handlePathlabUIClick(
 bool isPathlabUIOverlayAt(
     const sf::Vector2i& position,
     const sf::Vector2u& windowSize,
-    bool hasSearchTrace
+    bool hasSearchTrace,
+    bool sidebarVisible
 ){
     return
         hasSearchTrace
         &&
         containsPoint(
-            getPlaybackDockBounds(windowSize),
+            getPlaybackDockBounds(windowSize, sidebarVisible),
             position
         );
 }

@@ -363,6 +363,12 @@ void PathlabApp::handleMousePressed(
 
             return;
 
+        case PathlabUIAction::ToggleSidebar:
+
+            toggleSidebar();
+
+            return;
+
         case PathlabUIAction::LoadDemoScene:
 
             algorithmDropdownOpen = false;
@@ -560,7 +566,8 @@ void PathlabApp::handleMousePressed(
     if(isPathlabUIOverlayAt(
         event.position,
         window.getSize(),
-        uiData.hasSearchTrace
+        uiData.hasSearchTrace,
+        uiData.sidebarVisible
     )){
         return;
     }
@@ -695,6 +702,12 @@ void PathlabApp::handleKeyPressed(
         if(event.code == sf::Keyboard::Key::Escape){
             helpOverlayOpen = false;
         }
+
+        return;
+    }
+
+    if(event.code == sf::Keyboard::Key::Tab){
+        toggleSidebar();
 
         return;
     }
@@ -1048,7 +1061,7 @@ void PathlabApp::invalidatePlanningResult(){
 bool PathlabApp::isInsideCanvas(const sf::Vector2i& position) const {
     const sf::Vector2u windowSize = window.getSize();
 
-    const float canvasRight = static_cast<float>(windowSize.x) - PATHLAB_SIDE_PANEL_WIDTH;
+    const float canvasRight = getUsableCanvasWidth();
     const float canvasBottom = static_cast<float>(windowSize.y) - PATHLAB_BOTTOM_BAR_HEIGHT;
 
     return 
@@ -1077,6 +1090,7 @@ PathlabUIData PathlabApp::buildUIData() const
 
     data.algorithmDropdownOpen = algorithmDropdownOpen;
     data.helpOverlayOpen = helpOverlayOpen;
+    data.sidebarVisible = sidebarVisible;
     data.canRunPlanner = canRunPlanner();
 
     if(!start.has_value() && !goal.has_value()){
@@ -1232,11 +1246,7 @@ void PathlabApp::initializeViews(){
 void PathlabApp::resetCanvasView(){
     const sf::Vector2u windowSize = window.getSize();
 
-    const float canvasWidth =
-        std::max(
-            1.0f,
-            static_cast<float>(windowSize.x) - PATHLAB_SIDE_PANEL_WIDTH
-        );
+    const float canvasWidth = getUsableCanvasWidth();
 
     const float canvasHeight = std::max(
         1.0f,
@@ -1258,6 +1268,36 @@ void PathlabApp::resetCanvasView(){
     updateViewLayout();
 }
 
+void PathlabApp::toggleSidebar(){
+    const float previousCanvasWidth = getUsableCanvasWidth();
+
+    sidebarVisible = !sidebarVisible;
+    algorithmDropdownOpen = false;
+    canvasPanning = false;
+
+    const float newCanvasWidth = getUsableCanvasWidth();
+
+    // Keep the canvas's left world edge fixed while its screen-space width
+    // changes. This preserves the current zoom and avoids shifting existing
+    // content when the sidebar opens or closes.
+    canvasView.move(
+        sf::Vector2f(
+            (newCanvasWidth - previousCanvasWidth)
+                / (2.0f * canvasZoom),
+            0.0f
+        )
+    );
+
+    updateViewLayout();
+}
+
+float PathlabApp::getUsableCanvasWidth() const {
+    const float windowWidth = static_cast<float>(window.getSize().x);
+    const float sidebarWidth = sidebarVisible ? PATHLAB_SIDE_PANEL_WIDTH : 0.0f;
+
+    return std::max(1.0f, windowWidth - sidebarWidth);
+}
+
 void PathlabApp::updateViewLayout(){
     const sf::Vector2u windowSize = window.getSize();
 
@@ -1267,8 +1307,7 @@ void PathlabApp::updateViewLayout(){
     const float windowHeight =
         std::max(1.0f, static_cast<float>(windowSize.y));
 
-    const float canvasWidth =
-        std::max(1.0f, windowWidth - PATHLAB_SIDE_PANEL_WIDTH);
+    const float canvasWidth = getUsableCanvasWidth();
 
     const float canvasHeight = std::max(
         1.0f,

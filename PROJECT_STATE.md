@@ -87,6 +87,8 @@ Completed:
   screen-space reset control
 - Cohesive rounded UI controls, vector icons, hover/pressed feedback, and
   responsive sidebar spacing
+- Collapsible planner sidebar with sidebar-aware canvas, camera controls, and
+  playback-dock layout
 - Contextual screen-space Help / Controls overlay with modal input blocking
 - Contextual control availability and truthful planner-status feedback
 - Deterministic four-obstacle showcase scene for demos and planner comparison

@@ -11,6 +11,7 @@ constexpr float PATHLAB_SIDE_PANEL_WIDTH = 300.0f;
 enum class PathlabUIAction{
     None,
     OpenHelpOverlay,
+    ToggleSidebar,
     LoadDemoScene,
     ResetCamera,
     RunPlanner,
@@ -34,6 +35,8 @@ struct PathlabUIData{
     bool algorithmDropdownOpen = false;
 
     bool helpOverlayOpen = false;
+
+    bool sidebarVisible = true;
 
     std::string plannerStatus;
 
@@ -89,7 +92,8 @@ PathlabUIAction handlePathlabUIClick(
 bool isPathlabUIOverlayAt(
     const sf::Vector2i& position,
     const sf::Vector2u& windowSize,
-    bool hasSearchTrace
+    bool hasSearchTrace,
+    bool sidebarVisible
 );
 
 bool isPathlabHelpCloseButtonAt(

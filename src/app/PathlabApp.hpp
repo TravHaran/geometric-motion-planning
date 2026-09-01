@@ -129,7 +129,11 @@ class PathlabApp{
 
         void resetCanvasView();
 
+        void toggleSidebar();
+
         void updateViewLayout();
+
+        float getUsableCanvasWidth() const;
 
         // =====================================
         // Window / resources
@@ -196,6 +200,8 @@ class PathlabApp{
         bool algorithmDropdownOpen = false;
 
         bool helpOverlayOpen = false;
+
+        bool sidebarVisible = true;
 
         bool planningResultAvailable = false;
 
