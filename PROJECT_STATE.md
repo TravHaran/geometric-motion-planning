@@ -84,6 +84,8 @@ Completed:
 - Search playback with current-expansion and goal-reached highlighting in a
   contextual floating canvas dock
 - Canvas camera with cursor-centered zoom and Option-drag panning
+- Cohesive rounded UI controls, vector icons, hover/pressed feedback, and
+  responsive sidebar spacing
 
 Current demos:
 

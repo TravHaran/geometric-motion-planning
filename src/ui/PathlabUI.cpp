@@ -1,6 +1,7 @@
 #include "PathlabUI.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <iomanip>
@@ -42,6 +43,12 @@ const sf::Color CONTROL_HOVER{
     52
 };
 
+const sf::Color CONTROL_PRESSED{
+    44,
+    50,
+    61
+};
+
 const sf::Color BORDER{
     48,
     53,
@@ -78,6 +85,12 @@ const sf::Color ACCENT_HOVER{
     255
 };
 
+const sf::Color ACCENT_PRESSED{
+    48,
+    112,
+    220
+};
+
 const sf::Color SUCCESS{
     74,
     222,
@@ -96,9 +109,213 @@ const sf::Color WARNING{
     21
 };
 
+constexpr float CONTROL_RADIUS = 6.0f;
+constexpr float COMPACT_CONTROL_RADIUS = 5.0f;
+constexpr float CONTROL_HORIZONTAL_PADDING = 12.0f;
+
 // =====================================
 // Basic helpers
 // =====================================
+
+sf::ConvexShape makeRoundedRectangle(
+    const sf::FloatRect& bounds,
+    float requestedRadius
+){
+    constexpr std::size_t pointsPerCorner = 5;
+    constexpr float pi = 3.14159265358979323846f;
+
+    const float radius =
+        std::min(
+            requestedRadius,
+            std::min(bounds.size.x, bounds.size.y) / 2.0f
+        );
+
+    sf::ConvexShape shape(pointsPerCorner * 4);
+
+    const sf::Vector2f cornerCenters[4] = {
+        {radius, radius},
+        {bounds.size.x - radius, radius},
+        {bounds.size.x - radius, bounds.size.y - radius},
+        {radius, bounds.size.y - radius}
+    };
+
+    const float startAngles[4] = {
+        pi,
+        pi * 1.5f,
+        0.0f,
+        pi * 0.5f
+    };
+
+    std::size_t pointIndex = 0;
+
+    for(std::size_t corner = 0; corner < 4; ++corner){
+        for(std::size_t point = 0; point < pointsPerCorner; ++point){
+            const float angle =
+                startAngles[corner]
+                + pi * 0.5f
+                    * static_cast<float>(point)
+                    / static_cast<float>(pointsPerCorner - 1);
+
+            shape.setPoint(
+                pointIndex,
+                cornerCenters[corner]
+                    + sf::Vector2f(
+                        std::cos(angle) * radius,
+                        std::sin(angle) * radius
+                    )
+            );
+
+            ++pointIndex;
+        }
+    }
+
+    shape.setPosition(bounds.position);
+
+    return shape;
+}
+
+void drawRoundedSurface(
+    sf::RenderWindow& window,
+    const sf::FloatRect& bounds,
+    float radius,
+    const sf::Color& fillColor,
+    const sf::Color& outlineColor,
+    float outlineThickness = 1.0f
+){
+    sf::ConvexShape surface =
+        makeRoundedRectangle(bounds, radius);
+
+    surface.setFillColor(fillColor);
+    surface.setOutlineThickness(outlineThickness);
+    surface.setOutlineColor(outlineColor);
+
+    window.draw(surface);
+}
+
+sf::Color getControlFill(
+    bool hovered,
+    bool pressed,
+    bool active = false
+){
+    if(active){
+        return pressed
+            ? ACCENT_PRESSED
+            : hovered
+                ? ACCENT_HOVER
+                : ACCENT;
+    }
+
+    if(pressed){
+        return CONTROL_PRESSED;
+    }
+
+    return hovered
+        ? CONTROL_HOVER
+        : CONTROL;
+}
+
+void drawPlayIcon(
+    sf::RenderWindow& window,
+    const sf::Vector2f& center,
+    const sf::Color& color
+){
+    sf::ConvexShape triangle(3);
+
+    triangle.setPoint(0, center + sf::Vector2f(-3.5f, -5.0f));
+    triangle.setPoint(1, center + sf::Vector2f(-3.5f, 5.0f));
+    triangle.setPoint(2, center + sf::Vector2f(5.0f, 0.0f));
+    triangle.setFillColor(color);
+
+    window.draw(triangle);
+}
+
+void drawPauseIcon(
+    sf::RenderWindow& window,
+    const sf::Vector2f& center,
+    const sf::Color& color
+){
+    sf::RectangleShape leftBar(sf::Vector2f(2.5f, 10.0f));
+    sf::RectangleShape rightBar(sf::Vector2f(2.5f, 10.0f));
+
+    leftBar.setPosition(center + sf::Vector2f(-4.0f, -5.0f));
+    rightBar.setPosition(center + sf::Vector2f(1.5f, -5.0f));
+    leftBar.setFillColor(color);
+    rightBar.setFillColor(color);
+
+    window.draw(leftBar);
+    window.draw(rightBar);
+}
+
+void drawResetIcon(
+    sf::RenderWindow& window,
+    const sf::Vector2f& center,
+    const sf::Color& color
+){
+    sf::RectangleShape resetBar(sf::Vector2f(2.0f, 11.0f));
+
+    resetBar.setPosition(center + sf::Vector2f(-6.0f, -5.5f));
+    resetBar.setFillColor(color);
+    window.draw(resetBar);
+
+    sf::ConvexShape triangle(3);
+
+    triangle.setPoint(0, center + sf::Vector2f(-3.0f, 0.0f));
+    triangle.setPoint(1, center + sf::Vector2f(5.0f, -5.0f));
+    triangle.setPoint(2, center + sf::Vector2f(5.0f, 5.0f));
+    triangle.setFillColor(color);
+
+    window.draw(triangle);
+}
+
+void drawStepIcon(
+    sf::RenderWindow& window,
+    const sf::Vector2f& center,
+    const sf::Color& color
+){
+    drawPlayIcon(
+        window,
+        center + sf::Vector2f(-1.5f, 0.0f),
+        color
+    );
+
+    sf::RectangleShape stepBar(sf::Vector2f(2.0f, 11.0f));
+
+    stepBar.setPosition(center + sf::Vector2f(5.0f, -5.5f));
+    stepBar.setFillColor(color);
+    window.draw(stepBar);
+}
+
+void drawChevron(
+    sf::RenderWindow& window,
+    const sf::Vector2f& center,
+    bool pointsUp,
+    const sf::Color& color
+){
+    const float direction = pointsUp ? -1.0f : 1.0f;
+
+    sf::VertexArray chevron(sf::PrimitiveType::LineStrip);
+
+    chevron.append(
+        sf::Vertex{
+            center + sf::Vector2f(-4.0f, -2.0f * direction),
+            color
+        }
+    );
+    chevron.append(
+        sf::Vertex{
+            center + sf::Vector2f(0.0f, 2.0f * direction),
+            color
+        }
+    );
+    chevron.append(
+        sf::Vertex{
+            center + sf::Vector2f(4.0f, -2.0f * direction),
+            color
+        }
+    );
+
+    window.draw(chevron);
+}
 
 void drawText(
     sf::RenderWindow& window,
@@ -191,6 +408,10 @@ void drawValueRow(
     window.draw(valueText);
 }
 
+bool useCompactSidebarLayout(const sf::Vector2u& windowSize){
+    return windowSize.y < 780;
+}
+
 sf::FloatRect getRunPlannerButtonBounds(const sf::Vector2u& windowSize){
     const float windowWidth = static_cast<float>(windowSize.x);
 
@@ -198,7 +419,15 @@ sf::FloatRect getRunPlannerButtonBounds(const sf::Vector2u& windowSize){
 
     const float panelX = windowWidth - PATHLAB_SIDE_PANEL_WIDTH;
 
-    const float buttonY = windowHeight - PATHLAB_BOTTOM_BAR_HEIGHT - 56.0f;
+    const float bottomInset =
+        useCompactSidebarLayout(windowSize)
+            ? 52.0f
+            : 56.0f;
+
+    const float buttonY =
+        windowHeight
+        - PATHLAB_BOTTOM_BAR_HEIGHT
+        - bottomInset;
 
     return sf::FloatRect(
         sf::Vector2f(panelX + 20.0f, buttonY),
@@ -350,12 +579,15 @@ sf::FloatRect getVisualizationRowBounds(
         - PATHLAB_SIDE_PANEL_WIDTH;
 
 
-    constexpr float firstRowY =
-        PATHLAB_TOP_BAR_HEIGHT
-        + 144.0f;
+    const bool compact =
+        useCompactSidebarLayout(windowSize);
 
-    constexpr float rowSpacing =
-        23.0f;
+    const float firstRowY =
+        PATHLAB_TOP_BAR_HEIGHT
+        + (compact ? 105.0f : 144.0f);
+
+    const float rowSpacing =
+        compact ? 19.0f : 23.0f;
 
 
     const float rowY =
@@ -393,9 +625,12 @@ sf::FloatRect getAlgorithmSelectorBounds(
         - PATHLAB_SIDE_PANEL_WIDTH;
 
 
-    constexpr float selectorY =
+    const bool compact =
+        useCompactSidebarLayout(windowSize);
+
+    const float selectorY =
         PATHLAB_TOP_BAR_HEIGHT
-        + 58.0f;
+        + (compact ? 40.0f : 58.0f);
 
 
     return sf::FloatRect(
@@ -407,7 +642,7 @@ sf::FloatRect getAlgorithmSelectorBounds(
             PATHLAB_SIDE_PANEL_WIDTH
                 - 40.0f,
 
-            32.0f
+            compact ? 30.0f : 32.0f
         )
     );
 }
@@ -470,6 +705,28 @@ void drawCheckboxRow(
     float y,
     const sf::Color& previewColor
 ){
+    const sf::FloatRect rowBounds(
+        sf::Vector2f(panelX + 14.0f, y - 3.0f),
+        sf::Vector2f(PATHLAB_SIDE_PANEL_WIDTH - 28.0f, 21.0f)
+    );
+
+    const sf::Vector2i mousePosition =
+        sf::Mouse::getPosition(window);
+
+    const bool hovered =
+        containsPoint(rowBounds, mousePosition);
+
+    if(hovered){
+        drawRoundedSurface(
+            window,
+            rowBounds,
+            COMPACT_CONTROL_RADIUS,
+            sf::Color(255, 255, 255, 8),
+            sf::Color::Transparent,
+            0.0f
+        );
+    }
+
     const float checkboxX =
         panelX + 20.0f;
 
@@ -477,52 +734,51 @@ void drawCheckboxRow(
         y + 1.0f;
 
 
-    sf::RectangleShape checkbox(
-        sf::Vector2f(
-            14.0f,
-            14.0f
-        )
+    const sf::FloatRect checkboxBounds(
+        sf::Vector2f(checkboxX, checkboxY),
+        sf::Vector2f(14.0f, 14.0f)
     );
 
-    checkbox.setPosition(
-        sf::Vector2f(
-            checkboxX,
-            checkboxY
-        )
-    );
-
-    checkbox.setFillColor(
+    drawRoundedSurface(
+        window,
+        checkboxBounds,
+        3.0f,
         checked
             ? ACCENT
-            : CONTROL
-    );
-
-    checkbox.setOutlineThickness(
-        1.0f
-    );
-
-    checkbox.setOutlineColor(
+            : hovered
+                ? CONTROL_HOVER
+                : CONTROL,
         checked
             ? ACCENT
-            : BORDER
-    );
-
-    window.draw(
-        checkbox
+            : hovered
+                ? sf::Color(78, 86, 101)
+                : BORDER
     );
 
 
     if(checked){
+        sf::VertexArray checkmark(sf::PrimitiveType::LineStrip);
 
-        drawText(
-            window,
-            font,
-            "x",
-            checkboxX + 3.0f,
-            checkboxY - 3.0f,
-            11,
-            sf::Color::White
+        checkmark.append(
+            sf::Vertex{
+                sf::Vector2f(checkboxX + 3.0f, checkboxY + 7.0f),
+                sf::Color::White
+            }
         );
+        checkmark.append(
+            sf::Vertex{
+                sf::Vector2f(checkboxX + 6.0f, checkboxY + 10.0f),
+                sf::Color::White
+            }
+        );
+        checkmark.append(
+            sf::Vertex{
+                sf::Vector2f(checkboxX + 11.0f, checkboxY + 4.0f),
+                sf::Color::White
+            }
+        );
+
+        window.draw(checkmark);
     }
 
 
@@ -533,7 +789,9 @@ void drawCheckboxRow(
         panelX + 44.0f,
         y,
         12,
-        TEXT_SECONDARY
+        hovered
+            ? TEXT_PRIMARY
+            : TEXT_SECONDARY
     );
 
 
@@ -660,34 +918,19 @@ void drawAlgorithmSelector(
             mousePosition
         );
 
-
-    sf::RectangleShape selector(
-        bounds.size
-    );
-
-    selector.setPosition(
-        bounds.position
-    );
-
-    selector.setFillColor(
+    const bool pressed =
         hovered
-            ? CONTROL_HOVER
-            : CONTROL
-    );
+        &&
+        sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
 
-    selector.setOutlineThickness(
-        1.0f
-    );
-
-    selector.setOutlineColor(
+    drawRoundedSurface(
+        window,
+        bounds,
+        CONTROL_RADIUS,
+        getControlFill(hovered, pressed),
         dropdownOpen
             ? ACCENT
             : BORDER
-    );
-
-
-    window.draw(
-        selector
     );
 
 
@@ -695,23 +938,22 @@ void drawAlgorithmSelector(
         window,
         font,
         algorithm,
-        bounds.position.x + 11.0f,
+        bounds.position.x + CONTROL_HORIZONTAL_PADDING,
         bounds.position.y + 7.0f,
         12,
         TEXT_PRIMARY
     );
 
-
-    drawText(
+    drawChevron(
         window,
-        font,
-        dropdownOpen ? "^" : "v",
-        bounds.position.x
-            + bounds.size.x
-            - 20.0f,
-        bounds.position.y + 6.0f,
-        11,
-        TEXT_SECONDARY
+        sf::Vector2f(
+            bounds.position.x + bounds.size.x - 16.0f,
+            bounds.position.y + bounds.size.y / 2.0f
+        ),
+        dropdownOpen,
+        hovered
+            ? TEXT_PRIMARY
+            : TEXT_SECONDARY
     );
 }
 
@@ -731,6 +973,25 @@ void drawAlgorithmDropdown(
         "A*"
     };
 
+    const sf::FloatRect firstOptionBounds =
+        getAlgorithmOptionBounds(window.getSize(), 0);
+
+    const sf::FloatRect menuBounds(
+        firstOptionBounds.position,
+        sf::Vector2f(
+            firstOptionBounds.size.x,
+            firstOptionBounds.size.y * 2.0f
+        )
+    );
+
+    drawRoundedSurface(
+        window,
+        menuBounds,
+        CONTROL_RADIUS,
+        sf::Color(29, 33, 41, 250),
+        BORDER
+    );
+
 
     for(std::size_t i = 0; i < 2; ++i){
 
@@ -747,37 +1008,30 @@ void drawAlgorithmDropdown(
                 mousePosition
             );
 
+        const bool selected =
+            options[i] == selectedAlgorithm;
 
-        sf::RectangleShape option(
-            bounds.size
-        );
+        if(hovered || selected){
+            const sf::FloatRect highlightBounds(
+                bounds.position + sf::Vector2f(4.0f, 3.0f),
+                bounds.size - sf::Vector2f(8.0f, 6.0f)
+            );
 
-        option.setPosition(
-            bounds.position
-        );
-
-        option.setFillColor(
-            hovered
-                ? CONTROL_HOVER
-                : CONTROL
-        );
-
-        option.setOutlineThickness(
-            1.0f
-        );
-
-        option.setOutlineColor(
-            BORDER
-        );
-
-
-        window.draw(
-            option
-        );
+            drawRoundedSurface(
+                window,
+                highlightBounds,
+                COMPACT_CONTROL_RADIUS,
+                hovered
+                    ? CONTROL_HOVER
+                    : sf::Color(ACCENT.r, ACCENT.g, ACCENT.b, 24),
+                sf::Color::Transparent,
+                0.0f
+            );
+        }
 
 
         const sf::Color textColor =
-            options[i] == selectedAlgorithm
+            selected
                 ? ACCENT
                 : TEXT_PRIMARY;
 
@@ -786,11 +1040,34 @@ void drawAlgorithmDropdown(
             window,
             font,
             options[i],
-            bounds.position.x + 11.0f,
+            bounds.position.x + CONTROL_HORIZONTAL_PADDING,
             bounds.position.y + 7.0f,
             12,
             textColor
         );
+
+        if(selected){
+            sf::CircleShape selectedIndicator(3.0f);
+
+            selectedIndicator.setFillColor(ACCENT);
+            selectedIndicator.setPosition(
+                sf::Vector2f(
+                    bounds.position.x + bounds.size.x - 18.0f,
+                    bounds.position.y + 13.0f
+                )
+            );
+
+            window.draw(selectedIndicator);
+        }
+
+        if(i == 0){
+            drawDivider(
+                window,
+                bounds.position.x + 8.0f,
+                bounds.position.y + bounds.size.y,
+                bounds.size.x - 16.0f
+            );
+        }
     }
 }
 
@@ -798,86 +1075,93 @@ void drawAlgorithmDropdown(
 // Playback Dock
 // =====================================
 
+enum class PlaybackControl{
+    Reset,
+    Toggle,
+    Step,
+    Speed
+};
+
 void drawPlaybackButton(
     sf::RenderWindow& window,
     const sf::Font& font,
     const sf::FloatRect& bounds,
-    const std::string& label,
+    PlaybackControl control,
+    const std::string& speedLabel,
     bool hovered,
-    bool active,
-    bool accentText = false
+    bool pressed,
+    bool playbackPlaying
 ){
-    sf::RectangleShape button(bounds.size);
+    const bool active =
+        control == PlaybackControl::Toggle
+        &&
+        playbackPlaying;
 
-    button.setPosition(bounds.position);
-
-    if(active){
-        button.setFillColor(
-            sf::Color(
-                ACCENT.r,
-                ACCENT.g,
-                ACCENT.b,
-                190
-            )
-        );
-    } else if(hovered){
-        button.setFillColor(
-            sf::Color(
-                CONTROL_HOVER.r,
-                CONTROL_HOVER.g,
-                CONTROL_HOVER.b,
-                245
-            )
-        );
-    } else {
-        button.setFillColor(
-            sf::Color(
-                CONTROL.r,
-                CONTROL.g,
-                CONTROL.b,
-                220
-            )
-        );
-    }
-
-    button.setOutlineThickness(1.0f);
-    button.setOutlineColor(
+    drawRoundedSurface(
+        window,
+        bounds,
+        8.0f,
+        getControlFill(hovered, pressed, active),
         active
             ? sf::Color(ACCENT_HOVER.r, ACCENT_HOVER.g, ACCENT_HOVER.b, 180)
             : sf::Color(BORDER.r, BORDER.g, BORDER.b, 180)
     );
 
-    window.draw(button);
-
-
-    sf::Text buttonText(font);
-
-    buttonText.setString(label);
-    buttonText.setCharacterSize(11);
-    buttonText.setFillColor(
+    const sf::Color iconColor =
         active
             ? sf::Color::White
-            : accentText
+            : control == PlaybackControl::Speed
                 ? ACCENT_HOVER
-                : TEXT_SECONDARY
-    );
+                : hovered
+                    ? TEXT_PRIMARY
+                    : TEXT_SECONDARY;
 
-    const sf::FloatRect textBounds =
-        buttonText.getLocalBounds();
+    const sf::Vector2f center =
+        bounds.position + bounds.size / 2.0f;
 
-    buttonText.setPosition(
-        sf::Vector2f(
-            bounds.position.x
-                + (bounds.size.x - textBounds.size.x) / 2.0f
-                - textBounds.position.x,
-            bounds.position.y
-                + (bounds.size.y - textBounds.size.y) / 2.0f
-                - textBounds.position.y
-                - 1.0f
-        )
-    );
+    switch(control){
+        case PlaybackControl::Reset:
+            drawResetIcon(window, center, iconColor);
+            break;
 
-    window.draw(buttonText);
+        case PlaybackControl::Toggle:
+            if(playbackPlaying){
+                drawPauseIcon(window, center, iconColor);
+            } else {
+                drawPlayIcon(window, center, iconColor);
+            }
+            break;
+
+        case PlaybackControl::Step:
+            drawStepIcon(window, center, iconColor);
+            break;
+
+        case PlaybackControl::Speed:{
+            sf::Text speedText(font);
+
+            speedText.setString(speedLabel);
+            speedText.setCharacterSize(11);
+            speedText.setFillColor(iconColor);
+
+            const sf::FloatRect textBounds =
+                speedText.getLocalBounds();
+
+            speedText.setPosition(
+                sf::Vector2f(
+                    center.x
+                        - textBounds.size.x / 2.0f
+                        - textBounds.position.x,
+                    center.y
+                        - textBounds.size.y / 2.0f
+                        - textBounds.position.y
+                        - 1.0f
+                )
+            );
+
+            window.draw(speedText);
+            break;
+        }
+    }
 }
 
 void drawPlaybackDock(
@@ -891,41 +1175,26 @@ void drawPlaybackDock(
         );
 
 
-    sf::RectangleShape shadow(dock.size);
-
-    shadow.setPosition(
-        dock.position + sf::Vector2f(0.0f, 4.0f)
-    );
-
-    shadow.setFillColor(
-        sf::Color(4, 6, 10, 105)
-    );
-
-    window.draw(shadow);
-
-
-    sf::RectangleShape background(
+    const sf::FloatRect shadowBounds(
+        dock.position + sf::Vector2f(0.0f, 5.0f),
         dock.size
     );
 
-    background.setPosition(
-        dock.position
+    drawRoundedSurface(
+        window,
+        shadowBounds,
+        12.0f,
+        sf::Color(4, 6, 10, 105),
+        sf::Color::Transparent,
+        0.0f
     );
 
-    background.setFillColor(
-        sf::Color(24, 28, 35, 235)
-    );
-
-    background.setOutlineThickness(
-        1.0f
-    );
-
-    background.setOutlineColor(
+    drawRoundedSurface(
+        window,
+        dock,
+        12.0f,
+        sf::Color(24, 28, 35, 235),
         sf::Color(83, 91, 105, 175)
-    );
-
-    window.draw(
-        background
     );
 
 
@@ -944,22 +1213,41 @@ void drawPlaybackDock(
     const sf::FloatRect speedBounds =
         getPlaybackSpeedBounds(window.getSize());
 
+    const bool leftPressed =
+        sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+
+    const bool resetHovered =
+        containsPoint(resetBounds, mousePosition);
+
+    const bool toggleHovered =
+        containsPoint(toggleBounds, mousePosition);
+
+    const bool stepHovered =
+        containsPoint(stepBounds, mousePosition);
+
+    const bool speedHovered =
+        containsPoint(speedBounds, mousePosition);
+
 
     drawPlaybackButton(
         window,
         font,
         resetBounds,
-        "|<",
-        containsPoint(resetBounds, mousePosition),
-        false
+        PlaybackControl::Reset,
+        "",
+        resetHovered,
+        resetHovered && leftPressed,
+        data.playbackPlaying
     );
 
     drawPlaybackButton(
         window,
         font,
         toggleBounds,
-        data.playbackPlaying ? "||" : ">",
-        containsPoint(toggleBounds, mousePosition),
+        PlaybackControl::Toggle,
+        "",
+        toggleHovered,
+        toggleHovered && leftPressed,
         data.playbackPlaying
     );
 
@@ -967,19 +1255,22 @@ void drawPlaybackDock(
         window,
         font,
         stepBounds,
-        ">|",
-        containsPoint(stepBounds, mousePosition),
-        false
+        PlaybackControl::Step,
+        "",
+        stepHovered,
+        stepHovered && leftPressed,
+        data.playbackPlaying
     );
 
     drawPlaybackButton(
         window,
         font,
         speedBounds,
+        PlaybackControl::Speed,
         data.playbackSpeed,
-        containsPoint(speedBounds, mousePosition),
-        false,
-        true
+        speedHovered,
+        speedHovered && leftPressed,
+        data.playbackPlaying
     );
 
 
@@ -1032,50 +1323,35 @@ void drawPlaybackDock(
         3.0f;
 
 
-    sf::RectangleShape progressBackground(
-        sf::Vector2f(
-            barWidth,
-            barHeight
-        )
+    const sf::FloatRect progressBounds(
+        sf::Vector2f(barX, barY),
+        sf::Vector2f(barWidth, barHeight)
     );
 
-    progressBackground.setPosition(
-        sf::Vector2f(
-            barX,
-            barY
-        )
+    drawRoundedSurface(
+        window,
+        progressBounds,
+        barHeight / 2.0f,
+        BORDER,
+        sf::Color::Transparent,
+        0.0f
     );
 
-    progressBackground.setFillColor(
-        BORDER
-    );
+    if(progressRatio > 0.0f){
+        const sf::FloatRect progressFillBounds(
+            sf::Vector2f(barX, barY),
+            sf::Vector2f(barWidth * progressRatio, barHeight)
+        );
 
-    window.draw(
-        progressBackground
-    );
-
-
-    sf::RectangleShape progressFill(
-        sf::Vector2f(
-            barWidth * progressRatio,
-            barHeight
-        )
-    );
-
-    progressFill.setPosition(
-        sf::Vector2f(
-            barX,
-            barY
-        )
-    );
-
-    progressFill.setFillColor(
-        ACCENT
-    );
-
-    window.draw(
-        progressFill
-    );
+        drawRoundedSurface(
+            window,
+            progressFillBounds,
+            barHeight / 2.0f,
+            ACCENT,
+            sf::Color::Transparent,
+            0.0f
+        );
+    }
 
 
     sf::Text progressText(font);
@@ -1111,33 +1387,64 @@ void drawRunPlannerButton(sf::RenderWindow& window, const sf::Font& font){
 
     const bool hovered = containsPoint(bounds, mousePosition);
 
-    sf::RectangleShape button(bounds.size);
+    const bool pressed =
+        hovered
+        &&
+        sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
 
-    button.setPosition(bounds.position);
-
-    button.setFillColor(hovered ? ACCENT_HOVER : ACCENT);
-
-    window.draw(button);
-
-    drawText(
+    drawRoundedSurface(
         window,
-        font,
-        ">",
-        bounds.position.x + 57.0f,
-        bounds.position.y + 9.0f,
-        13,
+        bounds,
+        8.0f,
+        getControlFill(hovered, pressed, true),
+        hovered
+            ? sf::Color(ACCENT_HOVER.r, ACCENT_HOVER.g, ACCENT_HOVER.b, 210)
+            : sf::Color(ACCENT_HOVER.r, ACCENT_HOVER.g, ACCENT_HOVER.b, 120)
+    );
+
+
+    sf::Text buttonText(font);
+
+    buttonText.setString("RUN PLANNER");
+    buttonText.setCharacterSize(12);
+    buttonText.setFillColor(sf::Color::White);
+
+    const sf::FloatRect textBounds =
+        buttonText.getLocalBounds();
+
+    constexpr float iconWidth = 10.0f;
+    constexpr float iconGap = 10.0f;
+
+    const float contentWidth =
+        iconWidth + iconGap + textBounds.size.x;
+
+    const float contentX =
+        bounds.position.x
+        + (bounds.size.x - contentWidth) / 2.0f;
+
+    drawPlayIcon(
+        window,
+        sf::Vector2f(
+            contentX + iconWidth / 2.0f,
+            bounds.position.y + bounds.size.y / 2.0f
+        ),
         sf::Color::White
     );
 
-    drawText(
-        window,
-        font,
-        "RUN PLANNER",
-        bounds.position.x + 76.0f,
-        bounds.position.y + 9.0f,
-        12,
-        sf::Color::White
+    buttonText.setPosition(
+        sf::Vector2f(
+            contentX
+                + iconWidth
+                + iconGap
+                - textBounds.position.x,
+            bounds.position.y
+                + (bounds.size.y - textBounds.size.y) / 2.0f
+                - textBounds.position.y
+                - 1.0f
+        )
     );
+
+    window.draw(buttonText);
 }
 
 // =====================================
@@ -1275,6 +1582,36 @@ void drawSidePanel(
         - PATHLAB_TOP_BAR_HEIGHT
         - PATHLAB_BOTTOM_BAR_HEIGHT;
 
+    const bool compact =
+        useCompactSidebarLayout(windowSize);
+
+    const float initialTopPadding =
+        compact ? 8.0f : 16.0f;
+
+    const float plannerLabelGap =
+        compact ? 18.0f : 21.0f;
+
+    const float plannerBlockHeight =
+        compact ? 52.0f : 69.0f;
+
+    const float sectionTopGap =
+        compact ? 8.0f : 14.0f;
+
+    const float sectionHeadingGap =
+        compact ? 19.0f : 24.0f;
+
+    const float visualizationRowSpacing =
+        compact ? 19.0f : 23.0f;
+
+    const float valueRowSpacing =
+        compact ? 18.0f : 21.0f;
+
+    const float statusToValueGap =
+        compact ? 21.0f : 24.0f;
+
+    const float sectionBottomGap =
+        compact ? 22.0f : 27.0f;
+
 
     sf::RectangleShape background(
         sf::Vector2f(
@@ -1326,7 +1663,7 @@ void drawSidePanel(
 
     float y =
         PATHLAB_TOP_BAR_HEIGHT
-        + 16.0f;
+        + initialTopPadding;
 
 
     // =====================================
@@ -1342,7 +1679,7 @@ void drawSidePanel(
     );
 
 
-    y += 21.0f;
+    y += plannerLabelGap;
 
 
     drawAlgorithmSelector(
@@ -1355,7 +1692,7 @@ void drawSidePanel(
     );
 
 
-    y += 69.0f;
+    y += plannerBlockHeight;
 
 
     drawDivider(
@@ -1371,7 +1708,7 @@ void drawSidePanel(
     // Visualization
     // =====================================
 
-    y += 14.0f;
+    y += sectionTopGap;
 
 
     drawSectionHeading(
@@ -1383,7 +1720,7 @@ void drawSidePanel(
     );
 
 
-    y += 24.0f;
+    y += sectionHeadingGap;
 
 
     drawCheckboxRow(
@@ -1401,7 +1738,7 @@ void drawSidePanel(
     );
 
 
-    y += 23.0f;
+    y += visualizationRowSpacing;
 
 
     drawCheckboxRow(
@@ -1419,7 +1756,7 @@ void drawSidePanel(
     );
 
 
-    y += 23.0f;
+    y += visualizationRowSpacing;
 
 
     drawCheckboxRow(
@@ -1434,7 +1771,7 @@ void drawSidePanel(
 
     if(data.hasSearchTrace){
 
-        y += 23.0f;
+        y += visualizationRowSpacing;
 
         drawCheckboxRow(
             window,
@@ -1451,7 +1788,7 @@ void drawSidePanel(
         );
     }
 
-    y += 27.0f;
+    y += sectionBottomGap;
 
     drawDivider(
         window,
@@ -1465,7 +1802,7 @@ void drawSidePanel(
     // Scene
     // =====================================
 
-    y += 14.0f;
+    y += sectionTopGap;
 
     drawSectionHeading(
         window,
@@ -1475,7 +1812,7 @@ void drawSidePanel(
         y
     );
 
-    y += 24.0f;
+    y += sectionHeadingGap;
 
     drawValueRow(
         window,
@@ -1488,7 +1825,7 @@ void drawSidePanel(
         y
     );
 
-    y += 21.0f;
+    y += valueRowSpacing;
 
     drawValueRow(
         window,
@@ -1502,7 +1839,7 @@ void drawSidePanel(
     );
 
 
-    y += 21.0f;
+    y += valueRowSpacing;
 
 
     drawValueRow(
@@ -1517,7 +1854,7 @@ void drawSidePanel(
     );
 
 
-    y += 27.0f;
+    y += sectionBottomGap;
 
 
     drawDivider(
@@ -1533,7 +1870,7 @@ void drawSidePanel(
     // Results
     // =====================================
 
-    y += 14.0f;
+    y += sectionTopGap;
 
 
     drawSectionHeading(
@@ -1545,7 +1882,7 @@ void drawSidePanel(
     );
 
 
-    y += 24.0f;
+    y += sectionHeadingGap;
 
 
     drawStatusBadge(
@@ -1557,7 +1894,7 @@ void drawSidePanel(
     );
 
 
-    y += 24.0f;
+    y += statusToValueGap;
 
 
     drawValueRow(
@@ -1572,7 +1909,7 @@ void drawSidePanel(
     );
 
 
-    y += 21.0f;
+    y += valueRowSpacing;
 
 
     drawValueRow(
@@ -1587,7 +1924,7 @@ void drawSidePanel(
     );
 
 
-    y += 21.0f;
+    y += valueRowSpacing;
 
 
     drawValueRow(
@@ -1601,7 +1938,7 @@ void drawSidePanel(
         y
     );
 
-    y += 21.0f;
+    y += valueRowSpacing;
 
 
     drawValueRow(
@@ -1616,7 +1953,7 @@ void drawSidePanel(
     );
 
 
-    y += 27.0f;
+    y += sectionBottomGap;
 
 
     drawDivider(
@@ -1632,7 +1969,7 @@ void drawSidePanel(
     // Performance
     // =====================================
 
-    y += 14.0f;
+    y += sectionTopGap;
 
 
     drawSectionHeading(
@@ -1644,7 +1981,7 @@ void drawSidePanel(
     );
 
 
-    y += 24.0f;
+    y += sectionHeadingGap;
 
 
     drawValueRow(
@@ -1659,7 +1996,7 @@ void drawSidePanel(
     );
 
 
-    y += 21.0f;
+    y += valueRowSpacing;
 
 
     drawValueRow(
@@ -1674,7 +2011,7 @@ void drawSidePanel(
     );
 
 
-    y += 21.0f;
+    y += valueRowSpacing;
 
 
     drawValueRow(
@@ -1735,34 +2072,17 @@ void drawShortcut(
         bounds.size.x + 12.0f;
 
 
-    sf::RectangleShape chip(
-        sf::Vector2f(
-            chipWidth,
-            20.0f
-        )
+    const sf::FloatRect chipBounds(
+        sf::Vector2f(x, y),
+        sf::Vector2f(chipWidth, 20.0f)
     );
 
-    chip.setPosition(
-        sf::Vector2f(
-            x,
-            y
-        )
-    );
-
-    chip.setFillColor(
-        CONTROL
-    );
-
-    chip.setOutlineThickness(
-        1.0f
-    );
-
-    chip.setOutlineColor(
+    drawRoundedSurface(
+        window,
+        chipBounds,
+        4.0f,
+        CONTROL,
         BORDER
-    );
-
-    window.draw(
-        chip
     );
 
 
