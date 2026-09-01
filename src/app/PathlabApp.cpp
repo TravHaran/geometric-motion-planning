@@ -10,6 +10,11 @@
 
 namespace{
 
+constexpr float MIN_CANVAS_ZOOM = 0.25f;
+constexpr float MAX_CANVAS_ZOOM = 4.0f;
+constexpr float CANVAS_ZOOM_STEP = 1.15f;
+constexpr float CANVAS_WORLD_HALF_EXTENT = 50000.0f;
+
 sf::Vector2f toVector(const Point& point){
     return {
         static_cast<float>(point.x),
@@ -35,6 +40,31 @@ void appendTriangle(
     vertices.append(sf::Vertex{toVector(triangle.a), color});
     vertices.append(sf::Vertex{toVector(triangle.b), color});
     vertices.append(sf::Vertex{toVector(triangle.c), color});
+}
+
+void appendRectangle(
+    sf::VertexArray& vertices,
+    const sf::FloatRect& rectangle,
+    const sf::Color& color
+){
+    const sf::Vector2f topLeft = rectangle.position;
+    const sf::Vector2f topRight{
+        rectangle.position.x + rectangle.size.x,
+        rectangle.position.y
+    };
+    const sf::Vector2f bottomLeft{
+        rectangle.position.x,
+        rectangle.position.y + rectangle.size.y
+    };
+    const sf::Vector2f bottomRight = rectangle.position + rectangle.size;
+
+    vertices.append(sf::Vertex{topLeft, color});
+    vertices.append(sf::Vertex{bottomLeft, color});
+    vertices.append(sf::Vertex{topRight, color});
+
+    vertices.append(sf::Vertex{topRight, color});
+    vertices.append(sf::Vertex{bottomLeft, color});
+    vertices.append(sf::Vertex{bottomRight, color});
 }
 
 void appendFilledCircle(
@@ -214,6 +244,7 @@ PathlabApp::PathlabApp() : window(
     window.setFramerateLimit(60);
     window.setMinimumSize(sf::Vector2u{900, 650});
 
+    initializeViews();
     rebuildCanvasRenderCache();
 
     updatePlaybackInterval();
@@ -267,14 +298,28 @@ void PathlabApp::processEvent(const sf::Event& event){
         window.close();
     }
 
-    if(const auto* resized = event.getIf<sf::Event::Resized>()){
-        sf::FloatRect visibleArea({0.0f, 0.0f}, sf::Vector2f(resized->size));
-        window.setView(sf::View(visibleArea));
-        rebuildCanvasRenderCache();
+    if(event.is<sf::Event::Resized>()){
+        updateViewLayout();
     }
 
     if(const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()){
         handleMousePressed(*mousePressed);
+    }
+
+    if(const auto* mouseReleased = event.getIf<sf::Event::MouseButtonReleased>()){
+        handleMouseReleased(*mouseReleased);
+    }
+
+    if(const auto* mouseMoved = event.getIf<sf::Event::MouseMoved>()){
+        handleMouseMoved(*mouseMoved);
+    }
+
+    if(const auto* wheelScrolled = event.getIf<sf::Event::MouseWheelScrolled>()){
+        handleMouseWheelScrolled(*wheelScrolled);
+    }
+
+    if(event.is<sf::Event::FocusLost>()){
+        canvasPanning = false;
     }
 
     if(const auto* keyPressed = event.getIf<sf::Event::KeyPressed>()){
@@ -489,10 +534,17 @@ void PathlabApp::handleMousePressed(
         return;
     }
 
-    Point clickedPoint{
-        static_cast<double>(event.position.x),
-        static_cast<double>(event.position.y)
-    };
+    if(isPanModifierPressed()){
+        canvasPanning = true;
+        canvasPanButton = sf::Mouse::Button::Left;
+        lastPanPixel = event.position;
+        return;
+    }
+
+    const sf::Vector2f worldPosition =
+        window.mapPixelToCoords(event.position, canvasView);
+
+    Point clickedPoint{worldPosition.x, worldPosition.y};
 
     if(inputMode == InputMode::Obstacle){
         currentObstacleVertices.push_back(clickedPoint);
@@ -505,6 +557,76 @@ void PathlabApp::handleMousePressed(
         invalidatePlanningResult();
         inputMode = InputMode::Obstacle;
     }
+}
+
+void PathlabApp::handleMouseReleased(
+    const sf::Event::MouseButtonReleased& event
+){
+    if(canvasPanning && event.button == canvasPanButton){
+        canvasPanning = false;
+    }
+}
+
+void PathlabApp::handleMouseMoved(
+    const sf::Event::MouseMoved& event
+){
+    if(!canvasPanning){
+        return;
+    }
+
+    if(
+        !sf::Mouse::isButtonPressed(canvasPanButton)
+        ||
+        !isPanModifierPressed()
+    ){
+        canvasPanning = false;
+        return;
+    }
+
+    const sf::Vector2f previousWorldPosition =
+        window.mapPixelToCoords(lastPanPixel, canvasView);
+
+    const sf::Vector2f currentWorldPosition =
+        window.mapPixelToCoords(event.position, canvasView);
+
+    canvasView.move(previousWorldPosition - currentWorldPosition);
+    lastPanPixel = event.position;
+}
+
+void PathlabApp::handleMouseWheelScrolled(
+    const sf::Event::MouseWheelScrolled& event
+){
+    if(
+        event.wheel != sf::Mouse::Wheel::Vertical
+        ||
+        !isInsideCanvas(event.position)
+    ){
+        return;
+    }
+
+    const sf::Vector2f worldBeforeZoom =
+        window.mapPixelToCoords(event.position, canvasView);
+
+    const float requestedZoom =
+        canvasZoom * std::pow(CANVAS_ZOOM_STEP, event.delta);
+
+    const float newZoom = std::clamp(
+        requestedZoom,
+        MIN_CANVAS_ZOOM,
+        MAX_CANVAS_ZOOM
+    );
+
+    if(newZoom == canvasZoom){
+        return;
+    }
+
+    canvasZoom = newZoom;
+    updateViewLayout();
+
+    const sf::Vector2f worldAfterZoom =
+        window.mapPixelToCoords(event.position, canvasView);
+
+    canvasView.move(worldBeforeZoom - worldAfterZoom);
 }
 
 void PathlabApp::handleKeyPressed(
@@ -573,6 +695,8 @@ void PathlabApp::resetScene(){
 void PathlabApp::render(){
     window.clear(sf::Color(18, 20, 24));
 
+    window.setView(canvasView);
+
     drawCanvasBackground();
 
     drawVisibilityGraph();
@@ -588,6 +712,8 @@ void PathlabApp::render(){
     drawCurrentObstacle();
 
     drawStartAndGoal();
+
+    window.setView(uiView);
 
     const PathlabUIData uiData = buildUIData();
 
@@ -821,6 +947,13 @@ bool PathlabApp::isInsideCanvas(const sf::Vector2i& position) const {
         position.y < static_cast<int>(canvasBottom);
 }
 
+bool PathlabApp::isPanModifierPressed() const {
+    return
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LAlt)
+        ||
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RAlt);
+}
+
 PathlabUIData PathlabApp::buildUIData() const
 {
     PathlabUIData data;
@@ -905,54 +1038,131 @@ PathlabUIData PathlabApp::buildUIData() const
 
 void PathlabApp::drawCanvasBackground()
 {
-    const sf::Vector2u windowSize = window.getSize();
-
-    const float canvasWidth = static_cast<float>(windowSize.x) - PATHLAB_SIDE_PANEL_WIDTH;
-
-    const float canvasHeight = 
-        static_cast<float>(windowSize.y) - PATHLAB_TOP_BAR_HEIGHT - PATHLAB_BOTTOM_BAR_HEIGHT;
-
-    // ---------------------------------
-    // Canvas surface
-    // ---------------------------------
-
-    sf::RectangleShape background(sf::Vector2f(canvasWidth, canvasHeight));
-
-    background.setPosition(sf::Vector2f(0.0f, PATHLAB_TOP_BAR_HEIGHT));
-
-    background.setFillColor(sf::Color(16, 18, 22));
-
-    window.draw(background);
-
+    window.draw(canvasBackgroundVertices);
     window.draw(canvasGridVertices);
 }
 
 void PathlabApp::rebuildCanvasRenderCache(){
+    canvasBackgroundVertices.clear();
     canvasGridVertices.clear();
 
-    const sf::Vector2u windowSize = window.getSize();
-    const float canvasWidth = static_cast<float>(windowSize.x) - PATHLAB_SIDE_PANEL_WIDTH;
-    const float canvasHeight =
-        static_cast<float>(windowSize.y) - PATHLAB_TOP_BAR_HEIGHT - PATHLAB_BOTTOM_BAR_HEIGHT;
-
     constexpr float gridSpacing = 40.0f;
+    const float worldMinimum = -CANVAS_WORLD_HALF_EXTENT;
+    const float worldMaximum = CANVAS_WORLD_HALF_EXTENT;
+
+    appendRectangle(
+        canvasBackgroundVertices,
+        sf::FloatRect(
+            sf::Vector2f(worldMinimum, worldMinimum),
+            sf::Vector2f(
+                2.0f * CANVAS_WORLD_HALF_EXTENT,
+                2.0f * CANVAS_WORLD_HALF_EXTENT
+            )
+        ),
+        sf::Color(16, 18, 22)
+    );
+
     const sf::Color gridColor{30, 33, 40};
 
-    for(float x = 0.0f; x <= canvasWidth; x += gridSpacing){
+    const float firstVerticalLine =
+        std::ceil(worldMinimum / gridSpacing) * gridSpacing;
+
+    for(float x = firstVerticalLine; x <= worldMaximum; x += gridSpacing){
         canvasGridVertices.append(
-            sf::Vertex{sf::Vector2f(x, PATHLAB_TOP_BAR_HEIGHT), gridColor}
+            sf::Vertex{sf::Vector2f(x, worldMinimum), gridColor}
         );
         canvasGridVertices.append(
-            sf::Vertex{sf::Vector2f(x, PATHLAB_TOP_BAR_HEIGHT + canvasHeight), gridColor}
+            sf::Vertex{sf::Vector2f(x, worldMaximum), gridColor}
         );
     }
 
-    for(float y = PATHLAB_TOP_BAR_HEIGHT;
-        y <= PATHLAB_TOP_BAR_HEIGHT + canvasHeight;
-        y += gridSpacing){
-        canvasGridVertices.append(sf::Vertex{sf::Vector2f(0.0f, y), gridColor});
-        canvasGridVertices.append(sf::Vertex{sf::Vector2f(canvasWidth, y), gridColor});
+    const float firstHorizontalLine =
+        std::ceil(
+            (worldMinimum - PATHLAB_TOP_BAR_HEIGHT)
+            / gridSpacing
+        )
+        * gridSpacing
+        + PATHLAB_TOP_BAR_HEIGHT;
+
+    for(float y = firstHorizontalLine; y <= worldMaximum; y += gridSpacing){
+        canvasGridVertices.append(
+            sf::Vertex{sf::Vector2f(worldMinimum, y), gridColor}
+        );
+        canvasGridVertices.append(
+            sf::Vertex{sf::Vector2f(worldMaximum, y), gridColor}
+        );
     }
+}
+
+void PathlabApp::initializeViews(){
+    const sf::Vector2u windowSize = window.getSize();
+
+    const float canvasWidth =
+        static_cast<float>(windowSize.x) - PATHLAB_SIDE_PANEL_WIDTH;
+
+    const float canvasHeight =
+        static_cast<float>(windowSize.y)
+        - PATHLAB_TOP_BAR_HEIGHT
+        - PATHLAB_BOTTOM_BAR_HEIGHT;
+
+    canvasZoom = 1.0f;
+
+    canvasView = sf::View(
+        sf::Vector2f(
+            canvasWidth / 2.0f,
+            PATHLAB_TOP_BAR_HEIGHT + canvasHeight / 2.0f
+        ),
+        sf::Vector2f(canvasWidth, canvasHeight)
+    );
+
+    updateViewLayout();
+}
+
+void PathlabApp::updateViewLayout(){
+    const sf::Vector2u windowSize = window.getSize();
+
+    const float windowWidth =
+        std::max(1.0f, static_cast<float>(windowSize.x));
+
+    const float windowHeight =
+        std::max(1.0f, static_cast<float>(windowSize.y));
+
+    const float canvasWidth =
+        std::max(1.0f, windowWidth - PATHLAB_SIDE_PANEL_WIDTH);
+
+    const float canvasHeight = std::max(
+        1.0f,
+        windowHeight
+        - PATHLAB_TOP_BAR_HEIGHT
+        - PATHLAB_BOTTOM_BAR_HEIGHT
+    );
+
+    uiView = sf::View(
+        sf::FloatRect(
+            sf::Vector2f(0.0f, 0.0f),
+            sf::Vector2f(windowWidth, windowHeight)
+        )
+    );
+
+    canvasView.setSize(
+        sf::Vector2f(
+            canvasWidth / canvasZoom,
+            canvasHeight / canvasZoom
+        )
+    );
+
+    canvasView.setViewport(
+        sf::FloatRect(
+            sf::Vector2f(
+                0.0f,
+                PATHLAB_TOP_BAR_HEIGHT / windowHeight
+            ),
+            sf::Vector2f(
+                canvasWidth / windowWidth,
+                canvasHeight / windowHeight
+            )
+        )
+    );
 }
 
 void PathlabApp::rebuildObstacleRenderCache(){

@@ -52,11 +52,25 @@ class PathlabApp{
             const sf::Event::MouseButtonPressed& event
         );
 
+        void handleMouseReleased(
+            const sf::Event::MouseButtonReleased& event
+        );
+
+        void handleMouseMoved(
+            const sf::Event::MouseMoved& event
+        );
+
+        void handleMouseWheelScrolled(
+            const sf::Event::MouseWheelScrolled& event
+        );
+
         void handleKeyPressed(
             const sf::Event::KeyPressed& event
         );
 
         bool isInsideCanvas(const sf::Vector2i& position) const;
+
+        bool isPanModifierPressed() const;
 
         // =====================================
         // Scene 
@@ -107,12 +121,22 @@ class PathlabApp{
 
         void updatePlaybackInterval();
 
+        void initializeViews();
+
+        void updateViewLayout();
+
         // =====================================
         // Window / resources
         // =====================================
         sf::RenderWindow window;
 
         sf::Font uiFont;
+
+        sf::View canvasView;
+
+        sf::View uiView;
+
+        sf::VertexArray canvasBackgroundVertices{sf::PrimitiveType::Triangles};
 
         sf::VertexArray canvasGridVertices{sf::PrimitiveType::Lines};
 
@@ -190,5 +214,13 @@ class PathlabApp{
         std::size_t playbackSpeedIndex = 2;
 
         float playbackIntervalSeconds = 0.25f;
+
+        float canvasZoom = 1.0f;
+
+        bool canvasPanning = false;
+
+        sf::Mouse::Button canvasPanButton = sf::Mouse::Button::Left;
+
+        sf::Vector2i lastPanPixel;
 
 };

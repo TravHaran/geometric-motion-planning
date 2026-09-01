@@ -1779,6 +1779,26 @@ void drawBottomBar(
         585.0f,
         shortcutY
     );
+
+
+    drawShortcut(
+        window,
+        font,
+        "OPT+LMB",
+        "Pan",
+        665.0f,
+        shortcutY
+    );
+
+
+    drawShortcut(
+        window,
+        font,
+        "SCROLL",
+        "Zoom",
+        770.0f,
+        shortcutY
+    );
 }
 
 }

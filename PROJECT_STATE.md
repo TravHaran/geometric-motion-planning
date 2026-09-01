@@ -82,6 +82,7 @@ Completed:
 - Cached and batched PATHLAB scene rendering
 - Event-driven, frame-limited PATHLAB application loop
 - Search playback with current-expansion and goal-reached highlighting
+- Canvas camera with cursor-centered zoom and Option-drag panning
 
 Current demos:
 
