@@ -240,6 +240,8 @@ add_executable(
 
     src/geometry/Geometry.cpp
 
+    src/geometry/Triangulation.cpp
+
     src/graph/VisibilityGraph.cpp
 
     src/planners/Dijkstra.cpp
@@ -272,6 +274,7 @@ add_executable(
 
     tests/geometry_tests.cpp
     src/geometry/Geometry.cpp
+    src/geometry/Triangulation.cpp
 )
 
 target_include_directories(

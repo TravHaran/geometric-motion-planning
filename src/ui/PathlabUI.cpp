@@ -7,6 +7,86 @@
 
 namespace{
 
+// =====================================
+// PATHLAB design system
+// =====================================
+
+const sf::Color BACKGROUND{
+    18,
+    20,
+    24
+};
+
+const sf::Color SURFACE{
+    23,
+    26,
+    32
+};
+
+const sf::Color PANEL{
+    25,
+    28,
+    34
+};
+
+const sf::Color CONTROL{
+    31,
+    35,
+    43
+};
+
+const sf::Color BORDER{
+    48,
+    53,
+    63
+};
+
+const sf::Color TEXT_PRIMARY{
+    238,
+    240,
+    244
+};
+
+const sf::Color TEXT_SECONDARY{
+    155,
+    160,
+    170
+};
+
+const sf::Color TEXT_MUTED{
+    112,
+    118,
+    130
+};
+
+const sf::Color ACCENT{
+    59,
+    130,
+    246
+};
+
+const sf::Color SUCCESS{
+    74,
+    222,
+    128
+};
+
+const sf::Color DANGER{
+    248,
+    113,
+    113
+};
+
+const sf::Color WARNING{
+    250,
+    204,
+    21
+};
+
+// =====================================
+// Basic helpers
+// =====================================
+
 void drawText(
     sf::RenderWindow& window,
     const sf::Font& font,
@@ -24,14 +104,40 @@ void drawText(
     window.draw(label);
 }
 
+std::string formatDouble(double value, int precision = 2){
+    std::ostringstream stream;
+
+    stream << std::fixed << std::setprecision(precision)<< value;
+
+    return stream.str();
+}
+
 void drawDivider(sf::RenderWindow& window, float x, float y, float width){
     sf::RectangleShape divider(sf::Vector2f(width, 1.0f));
 
     divider.setPosition(sf::Vector2f(x,y));
 
-    divider.setFillColor(sf::Color(48,52,60));
+    divider.setFillColor(BORDER);
 
     window.draw(divider);
+}
+
+void drawSectionHeading(
+    sf::RenderWindow& window,
+    const sf::Font& font,
+    const std::string& text,
+    float x,
+    float y
+){
+    drawText(
+        window,
+        font,
+        text,
+        x,
+        y,
+        11,
+        TEXT_MUTED
+    );
 }
 
 void drawValueRow(
@@ -49,11 +155,7 @@ void drawValueRow(
         panelX + 20.0f,
         y,
         12,
-        sf::Color(
-            135,
-            140,
-            150
-        )
+        TEXT_SECONDARY
     );
 
     sf::Text valueText(font);
@@ -62,7 +164,7 @@ void drawValueRow(
 
     valueText.setCharacterSize(12);
 
-    valueText.setFillColor(sf::Color(225,228,235));
+    valueText.setFillColor(TEXT_PRIMARY);
 
     const sf::FloatRect bounds = valueText.getLocalBounds();
 
@@ -76,93 +178,524 @@ void drawValueRow(
     window.draw(valueText);
 }
 
-std::string formatDouble(double value, int precision = 2){
-    std::ostringstream stream;
+// =====================================
+// Checkbox-style visualization row
+// =====================================
 
-    stream << std::fixed << std::setprecision(precision)<< value;
+void drawCheckboxRow(
+    sf::RenderWindow& window,
+    const sf::Font& font,
+    const std::string& label,
+    bool checked,
+    float panelX,
+    float y,
+    const sf::Color& previewColor
+){
+    const float checkboxX =
+        panelX + 20.0f;
 
-    return stream.str();
-}
+    const float checkboxY =
+        y + 1.0f;
 
-void drawTopBar(sf::RenderWindow& window, const sf::Font& font){
-    const float windowWidth = static_cast<float>(window.getSize().x);
 
-    sf::RectangleShape background(sf::Vector2f(windowWidth, PATHLAB_TOP_BAR_HEIGHT));
-
-    background.setFillColor(sf::Color(23, 26, 32));
-
-    window.draw(background);
-
-    drawText(
-        window, 
-        font, 
-        "PATHLAB", 
-        22.0f,
-        14.0f,
-        21,
-        sf::Color(240, 242, 245)
+    sf::RectangleShape checkbox(
+        sf::Vector2f(
+            14.0f,
+            14.0f
+        )
     );
 
+    checkbox.setPosition(
+        sf::Vector2f(
+            checkboxX,
+            checkboxY
+        )
+    );
+
+    checkbox.setFillColor(
+        checked
+            ? ACCENT
+            : CONTROL
+    );
+
+    checkbox.setOutlineThickness(
+        1.0f
+    );
+
+    checkbox.setOutlineColor(
+        checked
+            ? ACCENT
+            : BORDER
+    );
+
+    window.draw(
+        checkbox
+    );
+
+
+    if(checked){
+
+        drawText(
+            window,
+            font,
+            "x",
+            checkboxX + 3.0f,
+            checkboxY - 3.0f,
+            11,
+            sf::Color::White
+        );
+    }
+
+
     drawText(
-        window, 
-        font, 
-        "Path Planning Visualizer", 
-        125.0f,
-        21.0f,
+        window,
+        font,
+        label,
+        panelX + 44.0f,
+        y,
         12,
-        sf::Color(140, 145, 155)
+        TEXT_SECONDARY
+    );
+
+
+    sf::CircleShape preview(
+        4.0f
+    );
+
+    preview.setFillColor(
+        previewColor
+    );
+
+    preview.setPosition(
+        sf::Vector2f(
+            panelX
+                + PATHLAB_SIDE_PANEL_WIDTH
+                - 28.0f,
+
+            y + 4.0f
+        )
+    );
+
+    window.draw(
+        preview
     );
 }
+
+// =====================================
+// Planner status
+// =====================================
+
+void drawStatusBadge(
+    sf::RenderWindow& window,
+    const sf::Font& font,
+    const std::string& status,
+    float panelX,
+    float y
+){
+    sf::Color statusColor =
+        TEXT_MUTED;
+
+
+    if(status == "Path Found"){
+
+        statusColor =
+            SUCCESS;
+    }
+
+    else if(status == "No Path"){
+
+        statusColor =
+            DANGER;
+    }
+
+
+    sf::CircleShape indicator(
+        4.0f
+    );
+
+    indicator.setFillColor(
+        statusColor
+    );
+
+    indicator.setPosition(
+        sf::Vector2f(
+            panelX + 20.0f,
+            y + 5.0f
+        )
+    );
+
+    window.draw(
+        indicator
+    );
+
+
+    drawText(
+        window,
+        font,
+        status,
+        panelX + 36.0f,
+        y,
+        12,
+        statusColor
+    );
+}
+
+// =====================================
+// Algorithm selector
+// =====================================
+
+void drawAlgorithmSelector(
+    sf::RenderWindow& window,
+    const sf::Font& font,
+    const std::string& algorithm,
+    float panelX,
+    float y
+){
+    drawText(
+        window,
+        font,
+        "Algorithm",
+        panelX + 20.0f,
+        y,
+        11,
+        TEXT_MUTED
+    );
+
+
+    const float selectorY =
+        y + 21.0f;
+
+
+    sf::RectangleShape selector(
+        sf::Vector2f(
+            PATHLAB_SIDE_PANEL_WIDTH
+                - 40.0f,
+
+            32.0f
+        )
+    );
+
+    selector.setPosition(
+        sf::Vector2f(
+            panelX + 20.0f,
+            selectorY
+        )
+    );
+
+    selector.setFillColor(
+        CONTROL
+    );
+
+    selector.setOutlineThickness(
+        1.0f
+    );
+
+    selector.setOutlineColor(
+        BORDER
+    );
+
+    window.draw(
+        selector
+    );
+
+
+    drawText(
+        window,
+        font,
+        algorithm,
+        panelX + 31.0f,
+        selectorY + 7.0f,
+        12,
+        TEXT_PRIMARY
+    );
+
+
+    drawText(
+        window,
+        font,
+        "v",
+        panelX
+            + PATHLAB_SIDE_PANEL_WIDTH
+            - 40.0f,
+        selectorY + 6.0f,
+        11,
+        TEXT_SECONDARY
+    );
+}
+
+// =====================================
+// Run planner button
+// =====================================
+
+void drawRunPlannerButton(
+    sf::RenderWindow& window,
+    const sf::Font& font,
+    float panelX,
+    float y
+){
+    sf::RectangleShape button(
+        sf::Vector2f(
+            PATHLAB_SIDE_PANEL_WIDTH
+                - 40.0f,
+
+            40.0f
+        )
+    );
+
+    button.setPosition(
+        sf::Vector2f(
+            panelX + 20.0f,
+            y
+        )
+    );
+
+    button.setFillColor(
+        ACCENT
+    );
+
+    window.draw(
+        button
+    );
+
+
+    drawText(
+        window,
+        font,
+        ">",
+        panelX + 77.0f,
+        y + 9.0f,
+        13,
+        sf::Color::White
+    );
+
+
+    drawText(
+        window,
+        font,
+        "RUN PLANNER",
+        panelX + 96.0f,
+        y + 9.0f,
+        12,
+        sf::Color::White
+    );
+}
+
+// =====================================
+// Top bar
+// =====================================
+
+void drawTopBar(
+    sf::RenderWindow& window,
+    const sf::Font& font
+){
+    const float windowWidth =
+        static_cast<float>(
+            window.getSize().x
+        );
+
+
+    sf::RectangleShape background(
+        sf::Vector2f(
+            windowWidth,
+            PATHLAB_TOP_BAR_HEIGHT
+        )
+    );
+
+    background.setFillColor(
+        SURFACE
+    );
+
+    window.draw(
+        background
+    );
+
+
+    drawText(
+        window,
+        font,
+        "PATHLAB",
+        22.0f,
+        13.0f,
+        20,
+        TEXT_PRIMARY
+    );
+
+
+    drawText(
+        window,
+        font,
+        "Path Planning Visualizer",
+        120.0f,
+        20.0f,
+        11,
+        TEXT_MUTED
+    );
+
+
+    // ---------------------------------
+    // Ready indicator
+    // ---------------------------------
+
+    sf::CircleShape readyIndicator(
+        4.0f
+    );
+
+    readyIndicator.setFillColor(
+        SUCCESS
+    );
+
+    readyIndicator.setPosition(
+        sf::Vector2f(
+            windowWidth
+                - PATHLAB_SIDE_PANEL_WIDTH
+                - 75.0f,
+
+            29.0f
+        )
+    );
+
+    window.draw(
+        readyIndicator
+    );
+
+
+    drawText(
+        window,
+        font,
+        "Ready",
+        windowWidth
+            - PATHLAB_SIDE_PANEL_WIDTH
+            - 60.0f,
+        22.0f,
+        11,
+        TEXT_SECONDARY
+    );
+
+
+    drawDivider(
+        window,
+        0.0f,
+        PATHLAB_TOP_BAR_HEIGHT
+            - 1.0f,
+        windowWidth
+    );
+}
+
+// =====================================
+// Sidebar
+// =====================================
 
 void drawSidePanel(
-    sf::RenderWindow& window, 
+    sf::RenderWindow& window,
     const sf::Font& font,
     const PathlabUIData& data
 ){
-    const sf::Vector2u windowSize = window.getSize();
+    const sf::Vector2u windowSize =
+        window.getSize();
 
-    const float windowWidth = static_cast<float>(windowSize.x);
-    const float windowHeight = static_cast<float>(windowSize.y);
 
-    const float panelX = windowWidth - PATHLAB_SIDE_PANEL_WIDTH;
-    const float panelHeight = windowHeight - PATHLAB_TOP_BAR_HEIGHT - PATHLAB_BOTTOM_BAR_HEIGHT;
+    const float windowWidth =
+        static_cast<float>(
+            windowSize.x
+        );
 
-    sf::RectangleShape background(sf::Vector2f(PATHLAB_SIDE_PANEL_WIDTH, panelHeight));
+    const float windowHeight =
+        static_cast<float>(
+            windowSize.y
+        );
 
-    background.setPosition(sf::Vector2f(panelX, PATHLAB_TOP_BAR_HEIGHT));
 
-    background.setFillColor(sf::Color(25, 28, 34));
+    const float panelX =
+        windowWidth
+        - PATHLAB_SIDE_PANEL_WIDTH;
 
-    window.draw(background);
+
+    const float panelHeight =
+        windowHeight
+        - PATHLAB_TOP_BAR_HEIGHT
+        - PATHLAB_BOTTOM_BAR_HEIGHT;
+
+
+    sf::RectangleShape background(
+        sf::Vector2f(
+            PATHLAB_SIDE_PANEL_WIDTH,
+            panelHeight
+        )
+    );
+
+    background.setPosition(
+        sf::Vector2f(
+            panelX,
+            PATHLAB_TOP_BAR_HEIGHT
+        )
+    );
+
+    background.setFillColor(
+        PANEL
+    );
+
+    window.draw(
+        background
+    );
+
+
+    // Left border separating canvas / panel.
+
+    sf::RectangleShape panelBorder(
+        sf::Vector2f(
+            1.0f,
+            panelHeight
+        )
+    );
+
+    panelBorder.setPosition(
+        sf::Vector2f(
+            panelX,
+            PATHLAB_TOP_BAR_HEIGHT
+        )
+    );
+
+    panelBorder.setFillColor(
+        BORDER
+    );
+
+    window.draw(
+        panelBorder
+    );
+
+
+    float y =
+        PATHLAB_TOP_BAR_HEIGHT
+        + 16.0f;
+
 
     // =====================================
     // Planner
     // =====================================
 
-    float y = PATHLAB_TOP_BAR_HEIGHT + 20.0f;
-
-    drawText(
-        window,
-        font, 
-        "PLANNER",
-        panelX + 20.0f,
-        PATHLAB_TOP_BAR_HEIGHT + 22.0f,
-        13,
-        sf::Color(190, 195, 205)
-    );
-
-    y += 32.0f;
-
-    drawValueRow(
+    drawSectionHeading(
         window,
         font,
-        "Algorithm",
+        "PLANNER",
+        panelX + 20.0f,
+        y
+    );
+
+
+    y += 21.0f;
+
+
+    drawAlgorithmSelector(
+        window,
+        font,
         data.algorithm,
         panelX,
         y
     );
 
-    y += 34.0f;
+
+    y += 69.0f;
+
 
     drawDivider(
         window,
@@ -171,67 +704,76 @@ void drawSidePanel(
         PATHLAB_SIDE_PANEL_WIDTH
             - 40.0f
     );
+
 
     // =====================================
     // Visualization
     // =====================================
 
-    y += 20.0f;
+    y += 14.0f;
 
-    drawText(
+
+    drawSectionHeading(
         window,
         font,
         "VISUALIZATION",
         panelX + 20.0f,
-        y,
-        13,
-        sf::Color(
-            190,
-            195,
-            205
-        )
+        y
     );
 
-    y += 30.0f;
 
-    drawValueRow(
+    y += 24.0f;
+
+
+    drawCheckboxRow(
         window,
         font,
         "Obstacles",
-        data.showObstacles
-            ? "Visible"
-            : "Hidden",
+        data.showObstacles,
         panelX,
-        y
+        y,
+        sf::Color(
+            170,
+            175,
+            185
+        )
     );
+
 
     y += 23.0f;
 
-    drawValueRow(
+
+    drawCheckboxRow(
         window,
         font,
         "Visibility Graph",
-        data.showVisibilityGraph
-            ? "Visible"
-            : "Hidden",
+        data.showVisibilityGraph,
         panelX,
-        y
+        y,
+        sf::Color(
+            105,
+            110,
+            120
+        )
     );
+
 
     y += 23.0f;
 
-    drawValueRow(
+
+    drawCheckboxRow(
         window,
         font,
         "Final Path",
-        data.showFinalPath
-            ? "Visible"
-            : "Hidden",
+        data.showFinalPath,
         panelX,
-        y
+        y,
+        WARNING
     );
 
-    y += 34.0f;
+
+    y += 27.0f;
+
 
     drawDivider(
         window,
@@ -241,27 +783,25 @@ void drawSidePanel(
             - 40.0f
     );
 
+
     // =====================================
     // Scene
     // =====================================
 
-    y += 20.0f;
+    y += 14.0f;
 
-    drawText(
+
+    drawSectionHeading(
         window,
         font,
         "SCENE",
         panelX + 20.0f,
-        y,
-        13,
-        sf::Color(
-            190,
-            195,
-            205
-        )
+        y
     );
 
-    y += 30.0f;
+
+    y += 24.0f;
+
 
     drawValueRow(
         window,
@@ -274,7 +814,9 @@ void drawSidePanel(
         y
     );
 
-    y += 23.0f;
+
+    y += 21.0f;
+
 
     drawValueRow(
         window,
@@ -287,7 +829,9 @@ void drawSidePanel(
         y
     );
 
-    y += 23.0f;
+
+    y += 21.0f;
+
 
     drawValueRow(
         window,
@@ -300,7 +844,9 @@ void drawSidePanel(
         y
     );
 
-    y += 34.0f;
+
+    y += 27.0f;
+
 
     drawDivider(
         window,
@@ -310,38 +856,37 @@ void drawSidePanel(
             - 40.0f
     );
 
+
     // =====================================
     // Results
     // =====================================
 
-    y += 20.0f;
+    y += 14.0f;
 
-    drawText(
+
+    drawSectionHeading(
         window,
         font,
         "RESULTS",
         panelX + 20.0f,
-        y,
-        13,
-        sf::Color(
-            190,
-            195,
-            205
-        )
+        y
     );
 
-    y += 30.0f;
 
-    drawValueRow(
+    y += 24.0f;
+
+
+    drawStatusBadge(
         window,
         font,
-        "Status",
         data.plannerStatus,
         panelX,
         y
     );
 
-    y += 23.0f;
+
+    y += 24.0f;
+
 
     drawValueRow(
         window,
@@ -354,7 +899,9 @@ void drawSidePanel(
         y
     );
 
-    y += 23.0f;
+
+    y += 21.0f;
+
 
     drawValueRow(
         window,
@@ -367,7 +914,9 @@ void drawSidePanel(
         y
     );
 
-    y += 23.0f;
+
+    y += 21.0f;
+
 
     drawValueRow(
         window,
@@ -380,7 +929,9 @@ void drawSidePanel(
         y
     );
 
-    y += 34.0f;
+
+    y += 27.0f;
+
 
     drawDivider(
         window,
@@ -390,27 +941,25 @@ void drawSidePanel(
             - 40.0f
     );
 
+
     // =====================================
     // Performance
     // =====================================
 
-    y += 20.0f;
+    y += 14.0f;
 
-    drawText(
+
+    drawSectionHeading(
         window,
         font,
         "PERFORMANCE",
         panelX + 20.0f,
-        y,
-        13,
-        sf::Color(
-            190,
-            195,
-            205
-        )
+        y
     );
 
-    y += 30.0f;
+
+    y += 24.0f;
+
 
     drawValueRow(
         window,
@@ -423,7 +972,9 @@ void drawSidePanel(
         y
     );
 
-    y += 23.0f;
+
+    y += 21.0f;
+
 
     drawValueRow(
         window,
@@ -436,7 +987,9 @@ void drawSidePanel(
         y
     );
 
-    y += 23.0f;
+
+    y += 21.0f;
+
 
     drawValueRow(
         window,
@@ -448,93 +1001,235 @@ void drawSidePanel(
         panelX,
         y
     );
-}
 
-void drawBottomBar(sf::RenderWindow& window, const sf::Font& font){
-    const sf::Vector2u windowSize = window.getSize();
-    const float windowWidth = static_cast<float>(windowSize.x);
-    const float windowHeight = static_cast<float>(windowSize.y);
-    const float barY = windowHeight - PATHLAB_BOTTOM_BAR_HEIGHT;
 
-    sf::RectangleShape background(sf::Vector2f(windowWidth, PATHLAB_BOTTOM_BAR_HEIGHT));
+    // =====================================
+    // Run button
+    // =====================================
 
-    background.setPosition(sf::Vector2f(0.0f,barY));
+    const float runButtonY =
+        windowHeight
+        - PATHLAB_BOTTOM_BAR_HEIGHT
+        - 56.0f;
 
-    background.setFillColor(sf::Color(23,26,32));
 
-    window.draw(background);
-
-    drawText(
+    drawRunPlannerButton(
         window,
         font,
-        "LMB  Add Vertex",
-        20.0f,
-        barY + 15.0f,
-        11,
-        sf::Color(
-            165,
-            170,
-            180
-        )
-    );
-
-    drawText(
-        window,
-        font,
-        "S  Set Start",
-        150.0f,
-        barY + 15.0f,
-        11,
-        sf::Color(
-            165,
-            170,
-            180
-        )
-    );
-
-    drawText(
-        window,
-        font,
-        "G  Set Goal",
-        255.0f,
-        barY + 15.0f,
-        11,
-        sf::Color(
-            165,
-            170,
-            180
-        )
-    );
-
-    drawText(
-        window,
-        font,
-        "SPACE  Run Planner",
-        360.0f,
-        barY + 15.0f,
-        11,
-        sf::Color(
-            165,
-            170,
-            180
-        )
-    );
-
-    drawText(
-        window,
-        font,
-        "R  Reset",
-        515.0f,
-        barY + 15.0f,
-        11,
-        sf::Color(
-            165,
-            170,
-            180
-        )
+        panelX,
+        runButtonY
     );
 }
 
+
+// =====================================
+// Bottom shortcut bar
+// =====================================
+
+void drawShortcut(
+    sf::RenderWindow& window,
+    const sf::Font& font,
+    const std::string& key,
+    const std::string& description,
+    float x,
+    float y
+){
+    sf::Text keyText(font);
+
+    keyText.setString(
+        key
+    );
+
+    keyText.setCharacterSize(
+        10
+    );
+
+    keyText.setFillColor(
+        TEXT_PRIMARY
+    );
+
+
+    const sf::FloatRect bounds =
+        keyText.getLocalBounds();
+
+
+    const float chipWidth =
+        bounds.size.x + 12.0f;
+
+
+    sf::RectangleShape chip(
+        sf::Vector2f(
+            chipWidth,
+            20.0f
+        )
+    );
+
+    chip.setPosition(
+        sf::Vector2f(
+            x,
+            y
+        )
+    );
+
+    chip.setFillColor(
+        CONTROL
+    );
+
+    chip.setOutlineThickness(
+        1.0f
+    );
+
+    chip.setOutlineColor(
+        BORDER
+    );
+
+    window.draw(
+        chip
+    );
+
+
+    keyText.setPosition(
+        sf::Vector2f(
+            x + 6.0f,
+            y + 3.0f
+        )
+    );
+
+    window.draw(
+        keyText
+    );
+
+
+    drawText(
+        window,
+        font,
+        description,
+        x + chipWidth + 7.0f,
+        y + 3.0f,
+        10,
+        TEXT_MUTED
+    );
+}
+
+
+void drawBottomBar(
+    sf::RenderWindow& window,
+    const sf::Font& font
+){
+    const sf::Vector2u windowSize =
+        window.getSize();
+
+
+    const float windowWidth =
+        static_cast<float>(
+            windowSize.x
+        );
+
+    const float windowHeight =
+        static_cast<float>(
+            windowSize.y
+        );
+
+
+    const float barY =
+        windowHeight
+        - PATHLAB_BOTTOM_BAR_HEIGHT;
+
+
+    sf::RectangleShape background(
+        sf::Vector2f(
+            windowWidth,
+            PATHLAB_BOTTOM_BAR_HEIGHT
+        )
+    );
+
+    background.setPosition(
+        sf::Vector2f(
+            0.0f,
+            barY
+        )
+    );
+
+    background.setFillColor(
+        SURFACE
+    );
+
+    window.draw(
+        background
+    );
+
+
+    drawDivider(
+        window,
+        0.0f,
+        barY,
+        windowWidth
+    );
+
+
+    const float shortcutY =
+        barY + 14.0f;
+
+
+    drawShortcut(
+        window,
+        font,
+        "LMB",
+        "Add Vertex",
+        18.0f,
+        shortcutY
+    );
+
+
+    drawShortcut(
+        window,
+        font,
+        "S",
+        "Set Start",
+        145.0f,
+        shortcutY
+    );
+
+
+    drawShortcut(
+        window,
+        font,
+        "G",
+        "Set Goal",
+        245.0f,
+        shortcutY
+    );
+
+
+    drawShortcut(
+        window,
+        font,
+        "SPACE",
+        "Run Planner",
+        345.0f,
+        shortcutY
+    );
+
+
+    drawShortcut(
+        window,
+        font,
+        "V",
+        "Graph",
+        500.0f,
+        shortcutY
+    );
+
+
+    drawShortcut(
+        window,
+        font,
+        "R",
+        "Reset",
+        585.0f,
+        shortcutY
+    );
+}
 
 }
 

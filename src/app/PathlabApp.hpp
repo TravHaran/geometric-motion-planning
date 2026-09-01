@@ -67,6 +67,10 @@ class PathlabApp{
         // =====================================
         void render();
 
+        PathlabUIData buildUIData() const;
+
+        void drawCanvasBackground();
+
         void drawObstacles();
 
         void drawCurrentObstacle();
@@ -76,8 +80,6 @@ class PathlabApp{
         void drawVisibilityGraph();
 
         void drawPath();
-
-        PathlabUIData buildUIData() const;
 
         // =====================================
         // Window / resources

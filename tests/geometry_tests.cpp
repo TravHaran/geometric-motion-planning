@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "geometry/Geometry.hpp"
+#include "../src/geometry/Triangulation.hpp"
 
 
 void testOrientation() {
@@ -640,6 +641,95 @@ void testIsVisibleConcavePolygon()
     ));
 }
 
+void testTriangulateTriangle()
+{
+    Polygon polygon{{
+        {0.0, 0.0},
+        {4.0, 0.0},
+        {2.0, 3.0}
+    }};
+
+
+    const std::vector<Triangle> triangles =
+        triangulatePolygon(
+            polygon
+        );
+
+
+    assert(
+        triangles.size() == 1
+    );
+}
+
+
+void testTriangulateConvexPolygon()
+{
+    Polygon polygon{{
+        {0.0, 0.0},
+        {4.0, 0.0},
+        {5.0, 3.0},
+        {2.0, 5.0},
+        {-1.0, 3.0}
+    }};
+
+
+    const std::vector<Triangle> triangles =
+        triangulatePolygon(
+            polygon
+        );
+
+
+    assert(
+        triangles.size() == 3
+    );
+}
+
+
+void testTriangulateConcavePolygon()
+{
+    Polygon polygon{{
+        {0.0, 0.0},
+        {5.0, 0.0},
+        {5.0, 4.0},
+        {3.0, 2.0},
+        {0.0, 4.0}
+    }};
+
+
+    const std::vector<Triangle> triangles =
+        triangulatePolygon(
+            polygon
+        );
+
+
+    assert(
+        triangles.size() == 3
+    );
+}
+
+
+void testTriangulateClockwisePolygon()
+{
+    Polygon polygon{{
+        {0.0, 4.0},
+        {3.0, 2.0},
+        {5.0, 4.0},
+        {5.0, 0.0},
+        {0.0, 0.0}
+    }};
+
+
+    const std::vector<Triangle> triangles =
+        triangulatePolygon(
+            polygon
+        );
+
+
+    assert(
+        triangles.size() == 3
+    );
+}
+
 
 int main() {
     //phase 1
@@ -663,6 +753,13 @@ int main() {
     testSegmentParameter();
     testPointAtSegmentParameter();
     testIsVisibleConcavePolygon();
+
+    // Triangulation
+    testTriangulateTriangle();
+    testTriangulateConvexPolygon();
+    testTriangulateConcavePolygon();
+    testTriangulateClockwisePolygon();
+    
     std::cout << "All geometry tests passed!\n";
 
     return 0;
