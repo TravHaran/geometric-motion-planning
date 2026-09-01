@@ -132,7 +132,11 @@ class PathlabApp{
 
         bool planningResultAvailable = false;
 
+        bool showObstacles = true;
+
         bool showVisibilityGraph = true;
+
+        bool showFinalPath = true;
 
         double graphBuildTimeMs = 0.0;
 

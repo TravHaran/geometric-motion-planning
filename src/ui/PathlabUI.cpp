@@ -65,6 +65,12 @@ const sf::Color ACCENT{
     246
 };
 
+const sf::Color ACCENT_HOVER{
+    79,
+    145,
+    255
+};
+
 const sf::Color SUCCESS{
     74,
     222,
@@ -190,6 +196,50 @@ sf::FloatRect getRunPlannerButtonBounds(const sf::Vector2u& windowSize){
     return sf::FloatRect(
         sf::Vector2f(panelX + 20.0f, buttonY),
         sf::Vector2f(PATHLAB_SIDE_PANEL_WIDTH - 40.0f, 40.0f)
+    );
+}
+
+sf::FloatRect getVisualizationRowBounds(
+    const sf::Vector2u& windowSize,
+    std::size_t rowIndex
+){
+    const float windowWidth =
+        static_cast<float>(
+            windowSize.x
+        );
+
+    const float panelX =
+        windowWidth
+        - PATHLAB_SIDE_PANEL_WIDTH;
+
+
+    constexpr float firstRowY =
+        PATHLAB_TOP_BAR_HEIGHT
+        + 144.0f;
+
+    constexpr float rowSpacing =
+        23.0f;
+
+
+    const float rowY =
+        firstRowY
+        + rowSpacing
+            * static_cast<float>(
+                rowIndex
+            );
+
+
+    return sf::FloatRect(
+        sf::Vector2f(
+            panelX + 14.0f,
+            rowY - 3.0f
+        ),
+        sf::Vector2f(
+            PATHLAB_SIDE_PANEL_WIDTH
+                - 28.0f,
+
+            21.0f
+        )
     );
 }
 
@@ -454,54 +504,37 @@ void drawAlgorithmSelector(
 // Run planner button
 // =====================================
 
-void drawRunPlannerButton(
-    sf::RenderWindow& window,
-    const sf::Font& font,
-    float panelX,
-    float y
-){
-    sf::RectangleShape button(
-        sf::Vector2f(
-            PATHLAB_SIDE_PANEL_WIDTH
-                - 40.0f,
+void drawRunPlannerButton(sf::RenderWindow& window, const sf::Font& font){
+    const sf::FloatRect bounds = getRunPlannerButtonBounds(window.getSize());
 
-            40.0f
-        )
-    );
+    const sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
 
-    button.setPosition(
-        sf::Vector2f(
-            panelX + 20.0f,
-            y
-        )
-    );
+    const bool hovered = containsPoint(bounds, mousePosition);
 
-    button.setFillColor(
-        ACCENT
-    );
+    sf::RectangleShape button(bounds.size);
 
-    window.draw(
-        button
-    );
+    button.setPosition(bounds.position);
 
+    button.setFillColor(hovered ? ACCENT_HOVER : ACCENT);
+
+    window.draw(button);
 
     drawText(
         window,
         font,
         ">",
-        panelX + 77.0f,
-        y + 9.0f,
+        bounds.position.x + 57.0f,
+        bounds.position.y + 9.0f,
         13,
         sf::Color::White
     );
-
 
     drawText(
         window,
         font,
         "RUN PLANNER",
-        panelX + 96.0f,
-        y + 9.0f,
+        bounds.position.x + 76.0f,
+        bounds.position.y + 9.0f,
         12,
         sf::Color::White
     );
@@ -1034,17 +1067,9 @@ void drawSidePanel(
     // Run button
     // =====================================
 
-    const float runButtonY =
-        windowHeight
-        - PATHLAB_BOTTOM_BAR_HEIGHT
-        - 56.0f;
-
-
     drawRunPlannerButton(
         window,
-        font,
-        panelX,
-        runButtonY
+        font
     );
 }
 
@@ -1284,5 +1309,71 @@ void drawPathlabUI(
     drawSidePanel(window, font, data);
 
     drawBottomBar(window, font);
+}
+
+PathlabUIAction handlePathlabUIClick(
+    const sf::Vector2i& position,
+    const sf::Vector2u& windowSize
+){
+    const sf::FloatRect runPlannerBounds =
+        getRunPlannerButtonBounds(
+            windowSize
+        );
+
+    if(containsPoint(
+        runPlannerBounds,
+        position
+    )){
+        return
+            PathlabUIAction::RunPlanner;
+    }
+
+    const sf::FloatRect obstaclesBounds =
+        getVisualizationRowBounds(
+            windowSize,
+            0
+        );
+
+    if(containsPoint(
+        obstaclesBounds,
+        position
+    )){
+        return
+            PathlabUIAction::ToggleObstacles;
+    }
+
+    const sf::FloatRect visibilityGraphBounds =
+        getVisualizationRowBounds(
+            windowSize,
+            1
+        );
+
+    if(containsPoint(
+        visibilityGraphBounds,
+        position
+    )){
+        return
+            PathlabUIAction::ToggleVisibilityGraph;
+    }
+
+
+    const sf::FloatRect finalPathBounds =
+        getVisualizationRowBounds(
+            windowSize,
+            2
+        );
+
+
+    if(containsPoint(
+        finalPathBounds,
+        position
+    )){
+        return
+            PathlabUIAction::ToggleFinalPath;
+    }
+
+
+    return
+        PathlabUIAction::None;
 }
 

@@ -267,7 +267,57 @@ void PathlabApp::handleMousePressed(
 ){
     if(event.button != sf::Mouse::Button::Left) return;
 
-    if(!isInsideCanvas(event.position)) return;
+    // =====================================
+    // UI interaction
+    // =====================================
+
+    const PathlabUIAction uiAction =
+        handlePathlabUIClick(event.position, window.getSize());
+
+    switch(uiAction){
+
+        case PathlabUIAction::RunPlanner:
+
+            runPlanner();
+            return;
+
+
+        case PathlabUIAction::ToggleObstacles:
+
+            showObstacles =
+                !showObstacles;
+
+            return;
+
+
+        case PathlabUIAction::ToggleVisibilityGraph:
+
+            showVisibilityGraph =
+                !showVisibilityGraph;
+
+            return;
+
+
+        case PathlabUIAction::ToggleFinalPath:
+
+            showFinalPath =
+                !showFinalPath;
+
+            return;
+
+
+        case PathlabUIAction::None:
+
+            break;
+    }
+
+    // =====================================
+    // Canvas interaction
+    // =====================================
+
+    if(!isInsideCanvas(event.position)){
+        return;
+    }
 
     Point clickedPoint{
         static_cast<double>(event.position.x),
@@ -365,6 +415,10 @@ void PathlabApp::render(){
 }
 
 void PathlabApp::drawObstacles(){
+    if(!showObstacles){
+        return;
+    }
+
     window.draw(obstacleFillVertices);
     window.draw(obstacleBorderVertices);
     window.draw(obstacleMarkerVertices);
@@ -426,7 +480,7 @@ void PathlabApp::drawVisibilityGraph(){
 }
 
 void PathlabApp::drawPath(){
-    if(!planningResultAvailable) return;
+    if(!planningResultAvailable || !showFinalPath) return;
 
     window.draw(pathVertices);
     window.draw(pathMarkerVertices);
@@ -521,7 +575,9 @@ PathlabUIData PathlabApp::buildUIData() const
     data.graphBuildTimeMs = graphBuildTimeMs;
     data.searchTimeMs = searchTimeMs;
     data.totalTimeMs = graphBuildTimeMs + searchTimeMs;
+    data.showObstacles = showObstacles;
     data.showVisibilityGraph = showVisibilityGraph;
+    data.showFinalPath = showFinalPath;
 
     return data;
 }

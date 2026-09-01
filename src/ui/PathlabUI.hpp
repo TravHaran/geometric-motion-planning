@@ -10,7 +10,10 @@ constexpr float PATHLAB_SIDE_PANEL_WIDTH = 300.0f;
 
 enum class PathlabUIAction{
     None,
-    RunPlanner
+    RunPlanner,
+    ToggleObstacles,
+    ToggleVisibilityGraph,
+    ToggleFinalPath
 };
 
 struct PathlabUIData{
