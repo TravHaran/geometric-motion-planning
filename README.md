@@ -31,13 +31,20 @@ The following external examples motivate that progression. They provide
 real-world and research context; they are **not** outputs of PATHLAB and do not
 represent systems implemented in this repository.
 
-| Real-world motivation | Planning-stack context |
+| Real-world deployment | Planner simulation |
 | --- | --- |
-| [![Agility Robotics' Digit operating in a warehouse](assets/media/digit-warehouse-reference.png)](https://www.agilityrobotics.com/content/digits-next-steps) | [![Reference architecture progressing from a 2D path planner through a path follower to a footstep planner](assets/media/humanoid-planning-stack-reference.png)](https://www.youtube.com/watch?v=VeutCk1xYzI) |
-| **Digit in a warehouse.** Agility Robotics describes navigation in constrained spaces, with payloads, frequent stops, and turns. [View the source article and footage.](https://www.agilityrobotics.com/content/digits-next-steps) | **From global route to dynamically informed steps.** This externally sourced architecture illustrates one decomposition from a 2D planar position-and-orientation (SE(2)) planner to trajectory following and footstep planning. [View the source video.](https://www.youtube.com/watch?v=VeutCk1xYzI) |
+| [![Agility Robotics' Digit operating in a warehouse](assets/media/digit-warehouse.gif)](https://www.agilityrobotics.com/content/digits-next-steps) | [![Agility Robotics' simulated footstep-planner comparison](assets/media/agility-path-planner-simulation.gif)](https://www.agilityrobotics.com/content/digits-next-steps) |
+| **Digit in a warehouse.** Agility Robotics describes navigation in constrained spaces, with payloads, frequent stops, and turns. [View the source article and footage.](https://www.agilityrobotics.com/content/digits-next-steps) | **Footstep-planner comparison.** The supplied Agility simulation presents a before/after planner comparison. Its labels and performance claim are Agility's, not measurements produced by PATHLAB. [View the source article.](https://www.agilityrobotics.com/content/digits-next-steps) |
+
+**Planning-stack context**
+
+[![Reference architecture progressing from a 2D path planner through a path
+follower to a footstep planner](assets/media/humanoid-planning-stack-reference.png)](https://www.youtube.com/watch?v=VeutCk1xYzI)
 
 The illustrated humanoid planning architecture connects a global 2D route to
-step-level motion through trajectory following and footstep planning.
+step-level motion through trajectory following and footstep planning. It is an
+external reference rather than a system implemented in PATHLAB. [View the
+source video.](https://www.youtube.com/watch?v=VeutCk1xYzI)
 
 As PATHLAB develops from a classical path-planning platform toward humanoid
 footstep planning, the research asks whether a global planner can retain broad
