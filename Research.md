@@ -2,7 +2,7 @@
 
 **Working title:** *From Dynamics to Geometry: Conservative Feasibility Surrogates for Humanoid Footstep Planning*  
 **Status:** Active research direction  
-**Last updated:** September 2, 2026
+**Last updated:** September 1, 2026
 
 ## 1. Purpose
 
@@ -12,6 +12,9 @@ PATHLAB is both:
 2. A research platform for studying whether expensive humanoid dynamic-feasibility evaluations can be distilled into inexpensive geometric tests.
 
 The research and software roadmaps progress **in parallel**. Formalization, proofs, literature review, oracle specification, and low-dimensional pilot experiments do not need to wait for every PATHLAB planning milestone. The two programs converge when the geometric feasibility model is integrated into a humanoid footstep planner.
+
+Current engineering implementation status is tracked separately in
+[PROJECT_STATE.md](PROJECT_STATE.md).
 
 ## 2. Primary Research Question
 
@@ -35,6 +38,8 @@ The dynamically feasible transition space of a humanoid has enough low-dimension
 
 This is a falsifiable hypothesis. A negative result—such as discovering that the feasible set is too state-dependent, fragmented, or high-dimensional to approximate efficiently—would still be scientifically meaningful.
 
+The terms *substantial fraction* and *closely agree* must be assigned measurable thresholds before confirmatory evaluation; they are not success criteria by themselves.
+
 ## 4. Scope and Non-Claims
 
 The initial study is intentionally limited to:
@@ -44,7 +49,7 @@ The initial study is intentionally limited to:
 - Planar foot poses.
 - A fixed robot model and fixed downstream controller.
 - A small conditioning state.
-- LIPM- or ALIP-based dynamics before higher-fidelity models.
+- Linear inverted pendulum model (LIPM) or angular-momentum linear inverted pendulum (ALIP) dynamics before higher-fidelity models.
 - Offline dataset generation and online graph-search evaluation.
 
 The project does **not** initially claim:
@@ -83,7 +88,7 @@ $$
 \{u\in\mathcal U(x):O_\theta(x,u)=1\}.
 $$
 
-The proposed geometric model constructs:
+The proposed geometric model aims to construct:
 
 $$
 \mathcal G_{\mathrm{in},\theta}(x)
@@ -92,6 +97,15 @@ $$
 \subseteq
 \mathcal G_{\mathrm{out},\theta}(x).
 $$
+
+This exact sandwich is the theoretical target. A model fitted from finite data
+will instead produce estimated sets
+$\widehat{\mathcal G}_{\mathrm{in},\theta}(x)$ and
+$\widehat{\mathcal G}_{\mathrm{out},\theta}(x)$; the exact inclusions must not
+be assumed for those estimates and must be evaluated empirically.
+The estimated inner set should be constrained to lie inside the estimated outer
+set so that the three-way rule is unambiguous. That estimated nesting alone does
+not prove that either set bounds $\mathcal F_\theta(x)$.
 
 The corresponding decision rule is:
 
@@ -116,7 +130,11 @@ $$
 \mathcal G_{\mathrm{in},\theta}(x).
 $$
 
-The central computational objective is to make this uncertainty region small—under the distribution of transitions that a planner actually considers—while controlling incorrect acceptance and rejection.
+For an exact sandwich, the rule introduces no false acceptances or false
+rejections relative to the oracle labels. For estimated sets, the central
+computational objective is to make the uncertainty region small—under the
+distribution of transitions that a planner actually considers—while measuring
+and controlling both error types.
 
 ## 6. Parallel Research Program
 
@@ -149,14 +167,22 @@ $$
 \mathcal G_{\mathrm{out}}(x)
 $$
 
-holds for every planner state, and transitions in the uncertainty region are evaluated by the exact oracle, then the filtered planner classifies every candidate edge exactly as the oracle-only planner. Subject to the usual assumptions of the underlying graph-search algorithm, it therefore preserves the feasible graph, completeness, and optimality.
+holds for every planner state, the oracle is deterministic for the fixed
+experiment, and transitions in the uncertainty region are evaluated by that
+exact oracle, then the filtered planner classifies every candidate edge exactly
+as the oracle-only planner. If both planners also use the same state
+representation, candidate-edge generation, and edge costs, they search the same
+feasible weighted graph. Subject to the usual assumptions of the underlying
+graph-search algorithm, the filtered planner therefore preserves completeness
+and optimality relative to the oracle-only planner.
 
 #### Empirical error events
 
-A false acceptance is:
+Suppressing the fixed parameter $\theta$ for readability, a false acceptance
+is:
 
 $$
-u\in\mathcal G_{\mathrm{in}}(x)
+u\in\widehat{\mathcal G}_{\mathrm{in}}(x)
 \quad\text{and}\quad
 O(x,u)=0.
 $$
@@ -164,7 +190,7 @@ $$
 A false rejection is:
 
 $$
-u\notin\mathcal G_{\mathrm{out}}(x)
+u\notin\widehat{\mathcal G}_{\mathrm{out}}(x)
 \quad\text{and}\quad
 O(x,u)=1.
 $$
@@ -240,7 +266,7 @@ Organize related work into:
 - Kinematic footstep planning.
 - Capturability and balance recovery.
 - Reduced-order dynamic planning.
-- Whole-body trajectory optimization and MPC.
+- Whole-body trajectory optimization and model-predictive control (MPC).
 - Learned feasibility and dynamics prediction.
 - Multi-fidelity planning.
 - Feasible wrench and actuation regions.
@@ -288,11 +314,17 @@ $$
 z=[\Delta x,\Delta y,v_x],
 $$
 
-with later extensions such as:
+where $\Delta x$ and $\Delta y$ are relative foot-placement coordinates and
+$v_x$ is forward center-of-mass velocity. Later extensions may include:
 
 $$
 \Delta\theta,\;v_y,\;L_x,\;L_y,\;T,\;\text{payload}.
 $$
+
+Here $\Delta\theta$ is relative foot yaw, $v_y$ is lateral center-of-mass
+velocity, $L_x$ and $L_y$ are angular-momentum components, and $T$ is step
+duration. The exact coordinates and reference frames must be fixed in the
+oracle specification.
 
 #### Pilot procedure
 
@@ -346,7 +378,7 @@ Synthetic experiments validate the approximation machinery, not the robotics hyp
 - [x] Path reconstruction
 - [x] Expanded-node instrumentation
 - [x] Planner-trace visualization and comparison
-- [ ] Voronoi/GVD maximum-clearance planning
+- [ ] Voronoi/generalized Voronoi diagram (GVD) maximum-clearance planning
 - [ ] Shortest-path-versus-clearance experiment
 
 #### Subsequent engineering sequence
@@ -355,8 +387,8 @@ Synthetic experiments validate the approximation machinery, not the robotics hyp
 - [ ] Implement configuration-space geometry.
 - [ ] Implement Minkowski sums and obstacle expansion.
 - [ ] Support polygonal robot footprints.
-- [ ] Introduce SE(2) position-and-orientation planning.
-- [ ] Implement and time-box PRM, RRT, and RRT*.
+- [ ] Introduce planar position-and-orientation planning in SE(2).
+- [ ] Implement and time-box probabilistic roadmaps (PRM), rapidly exploring random trees (RRT), and RRT*.
 - [ ] Implement flat-ground alternating-foot A*.
 - [ ] Integrate the oracle and geometric feasibility filter.
 
@@ -575,8 +607,8 @@ The smallest concrete follow-up task.
 Use this table for decisions that materially change the project.
 
 | Date | Decision | Evidence or reason | Consequence |
-|---|---|---|---|
-| 2026-09-02 | Run research and PATHLAB engineering in parallel | Formalization, literature work, and reduced-order pilots do not require the complete planner stack | Research progress is no longer gated by sequential PATHLAB milestones |
+| --- | --- | --- | --- |
+| 2026-09-01 | Run research and PATHLAB engineering in parallel | Formalization, literature work, and reduced-order pilots do not require the complete planner stack | Research progress is no longer gated by sequential PATHLAB milestones |
 
 ## 14. Definition of Research Progress
 
