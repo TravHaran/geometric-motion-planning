@@ -38,8 +38,15 @@ represent systems implemented in this repository.
 
 **Planning-stack context**
 
-[![Reference architecture progressing from a 2D path planner through a path
-follower to a footstep planner](assets/media/humanoid-planning-stack-reference.png)](https://www.youtube.com/watch?v=VeutCk1xYzI)
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=VeutCk1xYzI">
+    <img
+      src="assets/media/humanoid-planning-stack-reference.png"
+      alt="Reference architecture progressing from a 2D path planner through a path follower to a footstep planner"
+      width="760"
+    >
+  </a>
+</p>
 
 The illustrated humanoid planning architecture connects a global 2D route to
 step-level motion through trajectory following and footstep planning. It is an
