@@ -26,7 +26,7 @@ The animation shows the deterministic comparison scene, visibility graph,
 planner selection, path and expansion metrics, and search playback available
 in `demo_2e`.
 
-## Why this project?
+## Project Motivation
 
 Moving a humanoid through a working environment is not one planning problem.
 A global planner must reason about where the robot should go, a footstep
@@ -44,17 +44,13 @@ represent systems implemented in this repository.
 | [![Agility Robotics' Digit operating in a warehouse](assets/media/digit-warehouse-reference.png)](https://www.agilityrobotics.com/content/digits-next-steps) | [![Reference architecture progressing from a 2D path planner through a path follower to a footstep planner](assets/media/humanoid-planning-stack-reference.png)](https://www.youtube.com/watch?v=VeutCk1xYzI) |
 | **Digit in a warehouse.** Agility Robotics describes navigation in constrained spaces, with payloads, frequent stops, and turns. [View the source article and footage.](https://www.agilityrobotics.com/content/digits-next-steps) | **From global route to dynamically informed steps.** This externally sourced architecture illustrates one decomposition from a 2D planar position-and-orientation (SE(2)) planner to trajectory following and footstep planning. [View the source video.](https://www.youtube.com/watch?v=VeutCk1xYzI) |
 
-The Agility article also includes a simulated comparison of its updated
-footstep planner and describes a minimum-step global path followed by a
-model-predictive controller. That example helps connect global route selection
-to step-level motion, but its architecture and results belong to Agility
-Robotics rather than PATHLAB.
+The illustrated humanoid planning architecture connects a global 2D route to
+step-level motion through trajectory following and footstep planning.
 
-PATHLAB currently develops the transparent computational-geometry and graph
-search foundations at the global-planning end of this progression. The
-long-term research direction asks how a global footstep planner might retain
-that search efficiency while consulting expensive dynamics only when a cheap
-geometric test is uncertain.
+As PATHLAB develops from a classical path-planning platform toward humanoid
+footstep planning, the research asks whether a global planner can retain broad
+search efficiency while using computational geometry to avoid expensive
+dynamics evaluations whenever the geometric test is decisive.
 
 ## Research direction
 
