@@ -2,8 +2,8 @@
 
 This directory contains media used by the repository's main README.
 
-- `pathlab-demo.mov` is the supplied PATHLAB screen recording.
-- `pathlab-demo-poster.png` is a still generated from that recording.
+- `pathlab-demo.gif` is an optimized animation generated from the supplied
+  trimmed PATHLAB screen recording.
 - `digit-warehouse-reference.png` is a still generated from supplied Agility
   Robotics footage. Its source is
   [Digit's Next Steps](https://www.agilityrobotics.com/content/digits-next-steps).

@@ -19,12 +19,12 @@ For detailed implementation status, conventions, and milestones, see
 
 ## PATHLAB in action
 
-[![PATHLAB interactive planner showing a visibility graph, a computed path,
-planner metrics, and search playback](assets/media/pathlab-demo-poster.png)](assets/media/pathlab-demo.mov)
+![PATHLAB interactive planner showing a visibility graph, planner selection,
+computed paths, metrics, and search playback](assets/media/pathlab-demo.gif)
 
-*Click the image to watch the PATHLAB screen recording.* The demo shows the
-deterministic comparison scene, visibility graph, planner selection, path and
-expansion metrics, and search playback available in `demo_2e`.
+The animation shows the deterministic comparison scene, visibility graph,
+planner selection, path and expansion metrics, and search playback available
+in `demo_2e`.
 
 ## Why this project?
 
