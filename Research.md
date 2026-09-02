@@ -72,36 +72,35 @@ Let:
 
 The oracle returns:
 
-$$
+```math
 O_\theta(x,u)=
 \begin{cases}
 1, & \text{if the specified controller successfully executes }u,\\
 0, & \text{otherwise.}
 \end{cases}
-$$
+```
 
 The exact feasible transition set is:
 
-$$
-\mathcal F_\theta(x)
-=
+```math
+\mathcal F_\theta(x) =
 \{u\in\mathcal U(x):O_\theta(x,u)=1\}.
-$$
+```
 
 The proposed geometric model aims to construct:
 
-$$
+```math
 \mathcal G_{\mathrm{in},\theta}(x)
 \subseteq
 \mathcal F_\theta(x)
 \subseteq
 \mathcal G_{\mathrm{out},\theta}(x).
-$$
+```
 
 This exact sandwich is the theoretical target. A model fitted from finite data
 will instead produce estimated sets
-$\widehat{\mathcal G}_{\mathrm{in},\theta}(x)$ and
-$\widehat{\mathcal G}_{\mathrm{out},\theta}(x)$; the exact inclusions must not
+$`\widehat{\mathcal G}_{\mathrm{in},\theta}(x)`$ and
+$`\widehat{\mathcal G}_{\mathrm{out},\theta}(x)`$; the exact inclusions must not
 be assumed for those estimates and must be evaluated empirically.
 The estimated inner set should be constrained to lie inside the estimated outer
 set so that the three-way rule is unambiguous. That estimated nesting alone does
@@ -109,7 +108,7 @@ not prove that either set bounds $\mathcal F_\theta(x)$.
 
 The corresponding decision rule is:
 
-$$
+```math
 D(x,u)=
 \begin{cases}
 \text{accept}, & u\in\mathcal G_{\mathrm{in},\theta}(x),\\
@@ -118,17 +117,16 @@ D(x,u)=
 \setminus\mathcal G_{\mathrm{in},\theta}(x),\\
 \text{reject}, & u\notin\mathcal G_{\mathrm{out},\theta}(x).
 \end{cases}
-$$
+```
 
 The uncertainty region is:
 
-$$
-\mathcal B_\theta(x)
-=
+```math
+\mathcal B_\theta(x) =
 \mathcal G_{\mathrm{out},\theta}(x)
 \setminus
 \mathcal G_{\mathrm{in},\theta}(x).
-$$
+```
 
 For an exact sandwich, the rule introduces no false acceptances or false
 rejections relative to the oracle labels. For estimated sets, the central
@@ -159,13 +157,13 @@ and controlling both error types.
 
 If
 
-$$
+```math
 \mathcal G_{\mathrm{in}}(x)
 \subseteq
 \mathcal F(x)
 \subseteq
 \mathcal G_{\mathrm{out}}(x)
-$$
+```
 
 holds for every planner state, the oracle is deterministic for the fixed
 experiment, and transitions in the uncertainty region are evaluated by that
@@ -181,19 +179,19 @@ and optimality relative to the oracle-only planner.
 Suppressing the fixed parameter $\theta$ for readability, a false acceptance
 is:
 
-$$
+```math
 u\in\widehat{\mathcal G}_{\mathrm{in}}(x)
 \quad\text{and}\quad
 O(x,u)=0.
-$$
+```
 
 A false rejection is:
 
-$$
+```math
 u\notin\widehat{\mathcal G}_{\mathrm{out}}(x)
 \quad\text{and}\quad
 O(x,u)=1.
-$$
+```
 
 These errors have different consequences and must be reported separately.
 
@@ -310,16 +308,16 @@ Define before implementation:
 
 An initial transition vector may be:
 
-$$
+```math
 z=[\Delta x,\Delta y,v_x],
-$$
+```
 
 where $\Delta x$ and $\Delta y$ are relative foot-placement coordinates and
 $v_x$ is forward center-of-mass velocity. Later extensions may include:
 
-$$
+```math
 \Delta\theta,\;v_y,\;L_x,\;L_y,\;T,\;\text{payload}.
-$$
+```
 
 Here $\Delta\theta$ is relative foot yaw, $v_y$ is lateral center-of-mass
 velocity, $L_x$ and $L_y$ are angular-momentum components, and $T$ is step
