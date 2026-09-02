@@ -6,14 +6,6 @@ with SFML 3, it builds classical 2D planning tools from first principles, pairs
 them with focused tests and theory notes, and exposes their behavior through an
 interactive visualizer.
 
-The current implementation plans routes for a point robot among polygonal
-obstacles using visibility graphs with BFS, Dijkstra's algorithm, or A*. BFS
-minimizes edge count, while Dijkstra and A* minimize geometric path length. The
-long-term direction is to progress from these foundations toward clearance
-planning, configuration spaces, sampling-based methods, and eventually humanoid
-motion-planning research. Those later stages are planned research, not current
-capabilities.
-
 For detailed implementation status, conventions, and milestones, see
 [PROJECT_STATE.md](PROJECT_STATE.md).
 
