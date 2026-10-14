@@ -49,6 +49,7 @@ target_include_directories(
 add_library(
     pathlab_graph
     src/graph/VisibilityGraph.cpp
+    src/graph/ClearanceVisibilityGraph.cpp
 )
 
 target_include_directories(
@@ -284,6 +285,10 @@ target_link_libraries(
 )
 
 add_test(NAME graph COMMAND graph_tests)
+
+add_executable(clearance_graph_tests tests/clearance_graph_tests.cpp)
+target_link_libraries(clearance_graph_tests PRIVATE pathlab_graph pathlab_planners)
+add_test(NAME clearance_graph COMMAND clearance_graph_tests)
 
 add_executable(
     bfs_tests
