@@ -3,6 +3,7 @@
 #include "Point.hpp"
 #include "Segment.hpp"
 #include "Polygon.hpp"
+#include <vector>
 
 // Returns the shortest Euclidean distance from p to the CLOSED segment AB.
 // If A and B coincide, the segment is treated as the single point A.
@@ -24,3 +25,17 @@ double segmentSegmentDistance(const Segment& first, const Segment& second);
 // matching the existing PATHLAB invalid-polygon convention.
 // Time: O(n) for n polygon vertices; auxiliary space: O(1).
 double segmentPolygonDistance(const Segment& segment, const Polygon& polygon);
+
+// Returns true only when EVERY point on the closed candidate segment is
+// STRICTLY farther than radius from EVERY filled polygonal obstacle.
+// Therefore contact with an obstacle or with its clearance boundary is blocked,
+// including at radius == 0. Invalid polygons (<3 vertices) are ignored.
+// radius must be finite and nonnegative; throws std::invalid_argument otherwise.
+// Assumes finite segment and polygon vertex coordinates.
+//
+// Time: O(sum of obstacle vertex counts), space: O(1).
+bool segmentHasClearance(
+    const Segment& segment,
+    const std::vector<Polygon>& obstacles,
+    double radius
+);
