@@ -235,6 +235,7 @@ void PathlabApp::processEvent(const sf::Event& event){
 
     if(event.is<sf::Event::FocusLost>()){
         canvasPanning = false;
+        clearanceSliderDragging = false;
     }
 
     if(const auto* keyPressed = event.getIf<sf::Event::KeyPressed>()){
@@ -252,6 +253,22 @@ void PathlabApp::handleMousePressed(
             helpOverlayOpen = false;
         }
 
+        return;
+    }
+
+    // The preview HUD lives in screen coordinates. Intercept clicks before
+    // obstacle-vertex placement; the slider does not alter planner results.
+    const int px = event.position.x;
+    const int py = event.position.y;
+    if(px >= 22 && px <= 422 && py >= 78 && py <= 178){
+        algorithmDropdownOpen = false;
+        if(py >= 120 && py <= 157 && px >= 160 && px <= 400){
+            clearanceSliderDragging = true;
+            setClearancePreviewRadiusFromScreenX(px);
+        }else if(py >= 119 && py <= 158 && px >= 32 && px <= 148){
+            showClearancePreview = !showClearancePreview;
+            worldBackdropDirty = true;
+        }
         return;
     }
 
@@ -516,6 +533,9 @@ void PathlabApp::handleMousePressed(
 void PathlabApp::handleMouseReleased(
     const sf::Event::MouseButtonReleased& event
 ){
+    if(event.button == sf::Mouse::Button::Left){
+        clearanceSliderDragging = false;
+    }
     if(canvasPanning && event.button == canvasPanButton){
         canvasPanning = false;
     }
@@ -524,6 +544,10 @@ void PathlabApp::handleMouseReleased(
 void PathlabApp::handleMouseMoved(
     const sf::Event::MouseMoved& event
 ){
+    if(clearanceSliderDragging){
+        setClearancePreviewRadiusFromScreenX(event.position.x);
+        return;
+    }
     if(helpOverlayOpen){
         return;
     }
@@ -612,6 +636,22 @@ void PathlabApp::handleKeyPressed(
             helpOverlayOpen = false;
         }
 
+        return;
+    }
+
+    if(event.code == sf::Keyboard::Key::C){
+        showClearancePreview = !showClearancePreview;
+        worldBackdropDirty = true;
+        return;
+    }
+    if(event.code == sf::Keyboard::Key::LBracket){
+        clearancePreviewRadius = std::max(0.0f,clearancePreviewRadius-5.0f);
+        worldBackdropDirty = true;
+        return;
+    }
+    if(event.code == sf::Keyboard::Key::RBracket){
+        clearancePreviewRadius = std::min(120.0f,clearancePreviewRadius+5.0f);
+        worldBackdropDirty = true;
         return;
     }
 
@@ -749,6 +789,7 @@ void PathlabApp::render(){
 
     const PathlabUIData uiData = buildUIData();
 
+    drawClearanceHud(window);
     drawPathlabUI(window, uiFont, uiData, glassBackdrop);
 
     window.display();
@@ -758,6 +799,8 @@ void PathlabApp::renderWorld(sf::RenderTarget& target){
     drawCanvasBackground(target);
 
     drawVisibilityGraph(target);
+
+    drawClearancePreview(target);
 
     drawObstacles(target);
 
@@ -770,6 +813,101 @@ void PathlabApp::renderWorld(sf::RenderTarget& target){
     drawCurrentObstacle(target);
 
     drawStartAndGoal(target);
+}
+
+
+void PathlabApp::setClearancePreviewRadiusFromScreenX(int x){
+    const float normalized = std::clamp(
+        (static_cast<float>(x)-160.0f)/240.0f,0.0f,1.0f
+    );
+    // Snap to whole world units for a stable, interpretable UI value.
+    clearancePreviewRadius = std::round(normalized*120.0f);
+    worldBackdropDirty = true;
+}
+
+void PathlabApp::drawClearancePreview(sf::RenderTarget& target){
+    if(!showClearancePreview || !showObstacles || clearancePreviewRadius<=0.0f){
+        return;
+    }
+    // This *only draws* the boundary-distance neighborhood of each polygon.
+    // The existing Dijkstra/A* algorithms do NOT check this margin.
+    // Edge strips plus vertex disks form a translucent visualization of the
+    // Euclidean disk-offset around polygon boundaries (polygon interiors are
+    // drawn separately by drawObstacles).
+    const sf::Color color(250,139,98,46);
+    const float radius=clearancePreviewRadius;
+    sf::CircleShape cap(radius,28);
+    cap.setOrigin({radius,radius});
+    cap.setFillColor(color);
+    for(const Polygon& poly:obstacles){
+        const auto n=poly.vertices.size();
+        if(n<3)continue;
+        for(std::size_t i=0;i<n;++i){
+            const Point& a=poly.vertices[i];
+            const Point& b=poly.vertices[(i+1)%n];
+            const float dx=static_cast<float>(b.x-a.x);
+            const float dy=static_cast<float>(b.y-a.y);
+            const float length=std::hypot(dx,dy);
+            if(length>0.0f){
+                sf::RectangleShape strip({length,2.0f*radius});
+                strip.setOrigin({0.0f,radius});
+                strip.setPosition({static_cast<float>(a.x),
+                                   static_cast<float>(a.y)});
+                strip.setRotation(sf::radians(std::atan2(dy,dx)));
+                strip.setFillColor(color);
+                target.draw(strip);
+            }
+            cap.setPosition({static_cast<float>(a.x),
+                             static_cast<float>(a.y)});
+            target.draw(cap);
+        }
+    }
+}
+
+void PathlabApp::drawClearanceHud(sf::RenderTarget& target){
+    sf::RectangleShape background({400.0f,100.0f});
+    background.setPosition({22.0f,78.0f});
+    background.setFillColor(sf::Color(24,30,41,235));
+    background.setOutlineThickness(1.0f);
+    background.setOutlineColor(sf::Color(72,82,101));
+    target.draw(background);
+
+    sf::Text heading(uiFont);
+    heading.setCharacterSize(13);
+    heading.setFillColor(sf::Color(235,239,245));
+    heading.setString("CLEARANCE PREVIEW  |  visual only - not enforced");
+    heading.setPosition({34.0f,88.0f});
+    target.draw(heading);
+
+    sf::Text showLabel(uiFont);
+    showLabel.setCharacterSize(12);
+    showLabel.setFillColor(showClearancePreview?
+        sf::Color(104,225,172):sf::Color(148,158,175));
+    showLabel.setString(showClearancePreview?"[x] Show":"[ ] Show");
+    showLabel.setPosition({34.0f,123.0f});
+    target.draw(showLabel);
+
+    sf::RectangleShape track({240.0f,4.0f});
+    track.setPosition({160.0f,136.0f});
+    track.setFillColor(sf::Color(84,97,118));
+    target.draw(track);
+    sf::RectangleShape filled({2.0f*clearancePreviewRadius,4.0f});
+    filled.setPosition({160.0f,136.0f});
+    filled.setFillColor(sf::Color(250,139,98));
+    target.draw(filled);
+    sf::CircleShape thumb(7.0f);
+    thumb.setOrigin({7.0f,7.0f});
+    thumb.setPosition({160.0f+2.0f*clearancePreviewRadius,138.0f});
+    thumb.setFillColor(sf::Color(251,181,138));
+    target.draw(thumb);
+
+    sf::Text footer(uiFont);
+    footer.setCharacterSize(12);
+    footer.setFillColor(sf::Color(172,184,201));
+    footer.setString("Radius: "+std::to_string(static_cast<int>(clearancePreviewRadius))+
+                     " world units   |   C toggle   |   [ ] adjust");
+    footer.setPosition({34.0f,157.0f});
+    target.draw(footer);
 }
 
 void PathlabApp::drawObstacles(sf::RenderTarget& target){
