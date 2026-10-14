@@ -104,6 +104,8 @@ class PathlabApp{
 
         void drawClearanceHud(sf::RenderTarget& target);
 
+        void setClearancePreviewRadiusFromScreenX(int x);
+
         void drawCurrentObstacle(sf::RenderTarget& target);
 
         void drawStartAndGoal(sf::RenderTarget& target);
@@ -237,6 +239,7 @@ class PathlabApp{
         // The geometric backend remains a student-owned, later milestone.
         bool showClearancePreview = true;
         float clearancePreviewRadius = 20.0f;
+        bool clearanceSliderDragging = false;
 
         bool showVisibilityGraph = true;
 
