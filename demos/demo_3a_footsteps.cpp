@@ -11,7 +11,7 @@
 #include <vector>
 
 namespace {
-constexpr float SCALE=62.f, OX=52.f, OY=92.f, PI=3.141592654f;
+constexpr float SCALE=62.f, OX=52.f, OY=92.f;
 constexpr float SIDEX=1090.f, SCREENW=1480.f, SCREENH=880.f;
 const sf::Color BG(13,18,27), PANEL(23,29,40), TEXT(229,235,243), MUTED(155,168,187);
 const sf::Color CYAN(75,198,229), GREEN(83,214,144), BLUE(92,142,244), ORANGE(247,175,81);
@@ -101,7 +101,7 @@ private:
         if(index==0)config.clearance=.06+.64*t;
         if(index==1)config.maxStep=.45+.60*t;
         if(index==2)config.stepTime=.25+.25*t;
-        replan();
+        // Avoid recomputing A* for every intermediate mouse position.
     }
     void scrub(float x){
         float t=std::clamp((x-80.f)/960.f,0.f,1.f);
@@ -141,7 +141,9 @@ private:
             if(dragControl>=0)setSlider(dragControl,static_cast<float>(e->position.x));
         }
         if(event.is<sf::Event::MouseButtonReleased>()){
-            dragTimeline=false;dragControl=-1;
+            dragTimeline=false;
+            if(dragControl>=0)replan();
+            dragControl=-1;
         }
     }
     void button(float y,const std::string& name,bool selected){
