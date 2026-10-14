@@ -304,7 +304,7 @@ void draw(sf::RenderWindow& w,const sf::Font& f,const PathlabUIData& d){
                     sf::Color(247,166,111));
             circle(w,{slider.position.x+slider.size.x*ratio,mid},7.f,
                    sf::Color(255,187,136));
-            label(w,f,"Visual only - not enforced by planner",bx,by+101.f,10,MUTED);
+            label(w,f,"Applied on next Run Planner",bx,by+101.f,10,MUTED);
         }else if(i==2){
             checkRow(w,f,bx,by+9.f,"Obstacles",d.showObstacles,d.hasObstacles);
             checkRow(w,f,bx,by+40.f,"Visibility Graph",
