@@ -14,7 +14,7 @@ struct Settings {
     double stepTime = 0.38;        // seconds, fixed single-support interval
     double comHeight = 0.90;       // metres
     double gridSize = 0.20;
-    int maxExpansions = 30000;
+    int maxExpansions = 7000;
 };
 struct Scene {
     double width = 16.0;
