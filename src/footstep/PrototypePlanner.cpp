@@ -12,7 +12,7 @@
 namespace footstep {
 namespace {
 constexpr double G = 9.81;
-constexpr double PI = 3.14159265358979323846;
+
 double norm(Point a){ return std::hypot(a.x,a.y); }
 double dist(Point a, Point b){return std::hypot(a.x-b.x,a.y-b.y);}
 Point plus(Point a,Point b){return {a.x+b.x,a.y+b.y};}
@@ -153,7 +153,12 @@ Result solve(const Scene& sc,const Settings& st,Layer layer){
     first.support=sc.start;
     first.other={sc.start.x-.55,sc.start.y+.24};
     first.com=sc.start;
-    first.velocity={.58,.16};
+    const double w0=std::sqrt(G/st.comHeight);
+    const double e0=std::exp(w0*st.stepTime);
+    // Initialize a periodic, straight-line point-foot LIPM gait:
+    // for stride d, r_x=d/(exp(w*T)-1), and alternating width w_f,
+    // r_y=w_f/(exp(w*T)+1) (DCM relative to current support).
+    first.velocity={.45*w0/(e0-1.0),st.stepWidth*w0/(e0+1.0)};
     first.heading=0;first.nextSide=1;
     if(!safe(sc,first.support,.12)||!safe(sc,first.other,.12))return out;
     std::vector<State> nodes;nodes.reserve(35000);nodes.push_back(first);
@@ -167,8 +172,8 @@ Result solve(const Scene& sc,const Settings& st,Layer layer){
     best[key0]=0;
     open.push({heur(first.support),0,0});
     int end=0;double bestGoalDistance=dist(first.support,sc.goal);
-    constexpr double turns[]={-.66,-.33,0,.33,.66};
-    constexpr double lengths[]={.36,.52,.68,.82};
+    constexpr double turns[]={-.75,-.50,-.25,0,.25,.50,.75};
+    constexpr double lengths[]={0,.15,.30,.45,.60,.75};
     // The shared search is deliberately lattice-based; no exact optimality guarantee in R^2.
     while(!open.empty()&&out.expanded<static_cast<std::size_t>(st.maxExpansions)){
         QueueItem next=open.top();open.pop();
