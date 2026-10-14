@@ -78,6 +78,50 @@ void circle(sf::RenderWindow& w,sf::Vector2f c,float rad,sf::Color fill){
     sh.setOrigin({rad,rad});sh.setPosition(c);sh.setFillColor(fill);
     w.draw(sh);
 }
+// Use vector geometry, not font-dependent Unicode symbols. The UI font
+// doesn't reliably contain checkmarks, chevrons, or play/status glyphs.
+void stroke(sf::RenderWindow& w,sf::Vector2f a,sf::Vector2f b,
+            float thickness,sf::Color color){
+    const sf::Vector2f d=b-a;
+    const float length=std::hypot(d.x,d.y);
+    if(length<0.001f)return;
+    sf::RectangleShape line({length,thickness});
+    line.setOrigin({0.f,thickness*0.5f});
+    line.setPosition(a);
+    line.setRotation(sf::radians(std::atan2(d.y,d.x)));
+    line.setFillColor(color);
+    w.draw(line);
+}
+void playIcon(sf::RenderWindow& w,sf::Vector2f c,sf::Color color){
+    sf::ConvexShape triangle(3);
+    triangle.setPoint(0,{-4.f,-6.f});
+    triangle.setPoint(1,{-4.f, 6.f});
+    triangle.setPoint(2,{ 6.f, 0.f});
+    triangle.setPosition(c);
+    triangle.setFillColor(color);
+    w.draw(triangle);
+}
+void checkIcon(sf::RenderWindow& w,sf::Vector2f topLeft){
+    const sf::Color white(255,255,255);
+    stroke(w,topLeft+sf::Vector2f(3.f,8.f),
+           topLeft+sf::Vector2f(6.f,11.f),2.f,white);
+    stroke(w,topLeft+sf::Vector2f(6.f,11.f),
+           topLeft+sf::Vector2f(12.f,4.f),2.f,white);
+}
+void chevron(sf::RenderWindow& w,sf::Vector2f c,bool pointingDown,
+             sf::Color color){
+    if(pointingDown){
+        stroke(w,c+sf::Vector2f(-5.f,-2.f),
+               c+sf::Vector2f(0.f,3.f),1.8f,color);
+        stroke(w,c+sf::Vector2f(0.f,3.f),
+               c+sf::Vector2f(5.f,-2.f),1.8f,color);
+    }else{
+        stroke(w,c+sf::Vector2f(-2.f,-5.f),
+               c+sf::Vector2f(3.f,0.f),1.8f,color);
+        stroke(w,c+sf::Vector2f(3.f,0.f),
+               c+sf::Vector2f(-2.f,5.f),1.8f,color);
+    }
+}
 std::string shortNumber(double value,int precision=2){
     if(!std::isfinite(value))return "-";
     std::string s=std::to_string(value);
@@ -102,7 +146,7 @@ void checkRow(sf::RenderWindow& w,const sf::Font& f,float x,float y,
     surface(w,rect(x,y+5.f,15.f,15.f),
             !available?sf::Color(53,62,77):selected?ACCENT:sf::Color(39,48,61),
             selected?ACCENT:LINE);
-    if(selected && available)label(w,f,"✓",x+2.f,y+4.f,12,sf::Color::White);
+    if(selected && available)checkIcon(w,{x,y+5.f});
     label(w,f,name,x+28.f,y+1.f,12,available?TEXT:MUTED);
 }
 } // namespace
@@ -196,8 +240,11 @@ void draw(sf::RenderWindow& w,const sf::Font& f,const PathlabUIData& d){
     surface(w,rect(x,PATHLAB_TOP_BAR_HEIGHT,PATHLAB_SIDE_PANEL_WIDTH,110.f),
             sf::Color(20,26,36,244));
     surface(w,button,d.canRunPlanner?sf::Color(40,116,228):sf::Color(49,57,70));
-    label(w,f,"▶  RUN PLANNER",button.position.x+71.f,
-          button.position.y+11.f,14,d.canRunPlanner?sf::Color::White:MUTED);
+    const sf::Color runColor=d.canRunPlanner?sf::Color::White:MUTED;
+    playIcon(w,{button.position.x+75.f,button.position.y+button.size.y/2.f},
+             runColor);
+    label(w,f,"RUN PLANNER",button.position.x+93.f,
+          button.position.y+11.f,14,runColor);
     label(w,f,"CONFIGURATION  /  SCROLL FOR MORE",x+19.f,
           PATHLAB_TOP_BAR_HEIGHT+87.f,10,MUTED);
     // A clipped SFML view keeps expanded sections inside the panel.
@@ -221,9 +268,9 @@ void draw(sf::RenderWindow& w,const sf::Font& f,const PathlabUIData& d){
         surface(w,header,opened?sf::Color(38,49,66):sf::Color(30,39,53));
         label(w,f,TITLES[i],header.position.x+11.f,header.position.y+12.f,
               11,i>=6?MUTED:TEXT);
-        label(w,f,opened?"⌄":"›",
-              header.position.x+header.size.x-23.f,header.position.y+8.f,
-              18,i>=6?MUTED:TEXT);
+        chevron(w,{header.position.x+header.size.x-20.f,
+                   header.position.y+header.size.y/2.f},
+                opened,i>=6?MUTED:TEXT);
         if(!opened)continue;
         const float bx=x+PAD, by=header.position.y+HEAD;
         if(i==0){
@@ -233,8 +280,9 @@ void draw(sf::RenderWindow& w,const sf::Font& f,const PathlabUIData& d){
             const auto selected=d.selectedAlgorithmIndex<d.algorithmOptions.size()
                 ?d.algorithmOptions[d.selectedAlgorithmIndex]:"Select algorithm";
             label(w,f,selected,selector.position.x+12.f,selector.position.y+7.f,12);
-            label(w,f,d.algorithmDropdownOpen?"⌃":"⌄",
-                  selector.position.x+selector.size.x-21.f,selector.position.y+5.f,16,MUTED);
+            chevron(w,{selector.position.x+selector.size.x-17.f,
+                       selector.position.y+selector.size.y/2.f},
+                    !d.algorithmDropdownOpen,MUTED);
             if(d.algorithmDropdownOpen){
                 for(std::size_t k=0;k<d.algorithmOptions.size();++k){
                     const auto opt=algorithmOption(size,logical,k);
@@ -270,8 +318,10 @@ void draw(sf::RenderWindow& w,const sf::Font& f,const PathlabUIData& d){
             valueRow(w,f,bx,by+66.f,"Graph Edges",std::to_string(d.graphEdgeCount));
         }else if(i==4){
             const bool success=d.plannerStatus==PathlabPlannerStatus::PathFound;
-            label(w,f,success?"●  PATH FOUND":"●  CHECK PLANNER STATUS",
-                  bx,by+7.f,12,success?sf::Color(76,224,157):MUTED);
+            const sf::Color statusColor=success?sf::Color(76,224,157):MUTED;
+            circle(w,{bx+5.f,by+16.f},4.f,statusColor);
+            label(w,f,success?"PATH FOUND":"CHECK PLANNER STATUS",
+                  bx+16.f,by+7.f,12,statusColor);
             valueRow(w,f,bx,by+38.f,"Path Length",shortNumber(d.pathLength)+" px");
             valueRow(w,f,bx,by+65.f,"Path Segments",std::to_string(d.pathSegments));
             valueRow(w,f,bx,by+92.f,"Nodes in Path",std::to_string(d.pathNodes));
