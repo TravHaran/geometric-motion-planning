@@ -1,4 +1,5 @@
 #include "Clearance.hpp"
+#include "Geometry.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -28,4 +29,21 @@ double pointSegmentDistance(const Point& p, const Segment& segment){
     const double closestY = a.y + t * vy;
 
     return std::hypot(p.x - closestX, p.y - closestY);
+}
+
+double segmentSegmentDistance(const Segment& first, const Segment& second){
+    // A common point means the minimum Euclidean distance is zero.
+    if(segmentsIntersect(first, second)){
+        return 0.0;
+    }
+
+    // For disjoint planar segments, a minimum-distance pair can always
+    // be chosen such that at least one point is a segment endpoint.
+    // Every point-to-segment call already clamps its projection.
+    return std::min({
+        pointSegmentDistance(first.a, second),
+        pointSegmentDistance(first.b, second),
+        pointSegmentDistance(second.a, first),
+        pointSegmentDistance(second.b, first)
+    });
 }
