@@ -3,6 +3,8 @@
 #include "../visualization/Renderer.hpp"
 #include "../geometry/Segment.hpp"
 #include "../graph/VisibilityGraph.hpp"
+#include "../graph/ClearanceVisibilityGraph.hpp"
+#include "../geometry/Clearance.hpp"
 #include "../planners/AStar.hpp"
 #include "../planners/BFS.hpp"
 #include "../planners/Dijkstra.hpp"
@@ -667,12 +669,12 @@ void PathlabApp::handleKeyPressed(
     }
     if(event.code == sf::Keyboard::Key::LBracket){
         clearancePreviewRadius = std::max(0.0f,clearancePreviewRadius-5.0f);
-        worldBackdropDirty = true;
+        invalidatePlanningResult();
         return;
     }
     if(event.code == sf::Keyboard::Key::RBracket){
         clearancePreviewRadius = std::min(120.0f,clearancePreviewRadius+5.0f);
-        worldBackdropDirty = true;
+        invalidatePlanningResult();
         return;
     }
 
@@ -840,16 +842,19 @@ void PathlabApp::setClearancePreviewRadiusFromScreenX(int x){
     const auto bounds=pathlab_sidebar::clearanceSlider(window.getSize(),buildUIData());
     const float normalized=std::clamp(
         (static_cast<float>(x)-bounds.position.x)/bounds.size.x,0.0f,1.0f);
-    clearancePreviewRadius=std::round(normalized*120.0f);
-    worldBackdropDirty=true;
+    const float newRadius=std::round(normalized*120.0f);
+    if(newRadius != clearancePreviewRadius){
+        clearancePreviewRadius=newRadius;
+        invalidatePlanningResult();
+    }
 }
 
 void PathlabApp::drawClearancePreview(sf::RenderTarget& target){
     if(!showClearancePreview || !showObstacles || clearancePreviewRadius<=0.0f){
         return;
     }
-    // This *only draws* the boundary-distance neighborhood of each polygon.
-    // The existing Dijkstra/A* algorithms do NOT check this margin.
+    // Visual representation of the active clearance envelope.
+    // Graph edges are separately validated against the original polygons.
     // Edge strips plus vertex disks form a translucent visualization of the
     // Euclidean disk-offset around polygon boundaries (polygon interiors are
     // drawn separately by drawObstacles).
@@ -1000,7 +1005,8 @@ void PathlabApp::runPlanner(){
     // Build visibility graph
     const auto graphBuildStart = std::chrono::steady_clock::now();
 
-    graph = buildVisibilityGraph(*start, *goal, obstacles);
+    graph = buildClearanceVisibilityGraph(
+        *start, *goal, obstacles, static_cast<double>(clearancePreviewRadius));
 
     const auto graphBuildEnd = std::chrono::steady_clock::now();
 

@@ -35,6 +35,8 @@ find_package(
 add_library(
     pathlab_geometry
     src/geometry/Geometry.cpp
+    src/geometry/Clearance.cpp
+    src/geometry/OffsetWaypoints.cpp
     src/geometry/Triangulation.cpp
 )
 
@@ -47,6 +49,7 @@ target_include_directories(
 add_library(
     pathlab_graph
     src/graph/VisibilityGraph.cpp
+    src/graph/ClearanceVisibilityGraph.cpp
 )
 
 target_include_directories(
@@ -259,6 +262,17 @@ target_link_libraries(
 
 add_test(NAME geometry COMMAND geometry_tests)
 
+# Phase 3.1A: point-to-segment distance. Deliberately independent of the
+# path-planning and visibility-graph implementations.
+add_executable(clearance_tests tests/clearance_tests.cpp)
+target_link_libraries(clearance_tests PRIVATE pathlab_geometry)
+add_test(NAME clearance COMMAND clearance_tests)
+
+# Phase 3.1E step 1: offset waypoint candidates, before graph integration.
+add_executable(offset_waypoint_tests tests/offset_waypoint_tests.cpp)
+target_link_libraries(offset_waypoint_tests PRIVATE pathlab_geometry)
+add_test(NAME offset_waypoints COMMAND offset_waypoint_tests)
+
 add_executable(
     graph_tests
     tests/graph_tests.cpp
@@ -271,6 +285,10 @@ target_link_libraries(
 )
 
 add_test(NAME graph COMMAND graph_tests)
+
+add_executable(clearance_graph_tests tests/clearance_graph_tests.cpp)
+target_link_libraries(clearance_graph_tests PRIVATE pathlab_graph pathlab_planners)
+add_test(NAME clearance_graph COMMAND clearance_graph_tests)
 
 add_executable(
     bfs_tests

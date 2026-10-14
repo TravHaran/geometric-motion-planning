@@ -100,7 +100,7 @@ class PathlabApp{
 
         void drawObstacles(sf::RenderTarget& target);
 
-        // Pure rendering: the safety band is not yet used by search.
+        // Render the currently selected clearance envelope (also used by search).
         void drawClearancePreview(sf::RenderTarget& target);
 
         void setClearancePreviewRadiusFromScreenX(int x);
@@ -235,7 +235,8 @@ class PathlabApp{
 
         bool showObstacles = true;
 
-        // The geometric backend remains a student-owned, later milestone.
+        // Preview toggle controls drawing only; the selected radius affects planning
+        // regardless of whether the preview is visible.
         bool showClearancePreview = true;
         float clearancePreviewRadius = 20.0f;
         bool clearanceSliderDragging = false;
