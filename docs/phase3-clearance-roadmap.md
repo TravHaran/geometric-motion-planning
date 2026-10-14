@@ -1,28 +1,32 @@
 # Phase 3.1 — Obstacle-clearance geometry (incremental track)
 
-This branch intentionally diverges from the experimental \`feature/clearance-geometry\` proof-of-concept. Start from \`main\`, keep \`demo_2e\` as the baseline, and build geometric feasibility before footstep planning.
+This branch intentionally diverges from the experimental `feature/clearance-geometry` proof-of-concept. Start from `main`, keep `demo_2e` as the baseline, and build geometric feasibility before footstep planning.
 
-## Completed here: frontend visualization ONLY
+## Completed here: integrated scrollable sidebar (frontend only)
 
-Run \`./run.sh demo_2e\`, then select **Load Demo**.
+Run `./run.sh demo_2e`, then choose **Load Demo**.
 
-- A small **CLEARANCE PREVIEW** HUD appears near the upper-left canvas.
-- Drag its slider to set a radius of 0–120 current PATHLAB **world units**.
-- Click Show (or press **C**) to toggle the rendered safety band.
-- Press **[** or **]** to decrease/increase the radius by 5 world units.
-- The overlay is visualized by drawing translucent strips along edges and circular caps at obstacle vertices. The existing polygon fill represents the obstacle interior.
-- This overlay is **NOT enforced by BFS, Dijkstra or A***. Routes that cross the preview remain deliberately unchanged. The slider is not yet connected to any geometry predicate or planner.
+- The **Run Planner** button now stays fixed at the **top** of the sidebar.
+- Scroll the sidebar with the mouse wheel or trackpad. Scrolling over the sidebar no longer zooms the world canvas.
+- Click any section header to expand/collapse it. Available sections: Planner, Geometric Feasibility, Visualization, Scene, Results, Performance, Kinematic Reachability (future), and LIPM Dynamics (future).
+- The algorithm selector remains in the Planner section; its dropdown expands inline and participates in scrolling.
+- The **Geometric Feasibility** section contains the clearance preview toggle and radius slider (0–120 PATHLAB world units). Drag the thumb or click the track to adjust it.
+- The existing keyboard shortcuts remain: **C** toggles the preview; **[** and **]** decrease/increase the radius by 5.
+- Geometry, visualization, and result state are preserved when a section is collapsed.
+- This overlay is **not yet enforced** by BFS, Dijkstra, or A*: it only shows translucent bands surrounding polygonal obstacles. The shortest-path algorithms are unchanged.
 
-Because world coordinates in \`demo_2e\` are display-scaled values rather than physical metres, don't interpret 20 world units as 20 metres. Decide and document an explicit world-to-metre scale before implementing the biped.
+UI source: `src/ui/PathlabSidebar.cpp` and `src/ui/PathlabSidebar.hpp` contain the shared layout, section geometry, clipping, and hit-testing. `src/app/PathlabApp.cpp` holds UI state and wheel/slider events. Regression tests exercise scrolling, collapsible sections, run-button placement, and algorithm selection.
+
+Because world coordinates in `demo_2e` are display-scaled values rather than physical metres, don't interpret 20 world units as 20 metres. Decide and document an explicit world-to-metre scale before implementing the biped.
 
 ## Student-owned backend implementation order
 
 ### Step 1. Distance between a point and a segment
-Write \`pointSegmentDistance(Point p, Segment edge)\` in \`src/geometry/\` (place it in a distinct \`Clearance\` module, not in the UI).
+Write `pointSegmentDistance(Point p, Segment edge)` in `src/geometry/` (place it in a distinct `Clearance` module, not in the UI).
 Contract: return the minimum Euclidean distance from p to the closed segment. Address zero-length segments. Test an interior projection, projection before/after endpoints, and a point exactly on the segment.
 
 ### Step 2. Distance between a segment and a polygon
-Write \`segmentPolygonDistance(Segment, Polygon)\`. A segment entirely inside the polygon has distance zero, as do intersections/touches; otherwise find minimum distance among the segment and polygon boundary. Support both convex and simple concave polygons. Test near-vertex, near-edge, tangent, fully-contained, and completely disjoint inputs.
+Write `segmentPolygonDistance(Segment, Polygon)`. A segment entirely inside the polygon has distance zero, as do intersections/touches; otherwise find minimum distance among the segment and polygon boundary. Support both convex and simple concave polygons. Test near-vertex, near-edge, tangent, fully-contained, and completely disjoint inputs.
 
 ### Step 3. Clearance predicate
 For robot-body radius r>=0, return collision-free only if every point on a candidate route edge maintains at least r distance from each obstacle, with an explicitly chosen touch policy. We recommend treating contact as **blocked**. Validate negative or non-finite radii.
