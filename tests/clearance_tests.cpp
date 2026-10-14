@@ -25,6 +25,20 @@ void expectSegmentDistance(const std::string& caseName,
         throw std::runtime_error(caseName + ": incorrect segment-to-segment distance");
     }
 }
+void expectPolygonDistance(const std::string& caseName,
+                           const Segment& segment,
+                           const Polygon& polygon,
+                           double expected){
+    const double actual = segmentPolygonDistance(segment, polygon);
+    const Segment reversed{segment.b, segment.a};
+    const double reverseActual = segmentPolygonDistance(reversed, polygon);
+
+    if(!std::isfinite(actual) || !std::isfinite(reverseActual) ||
+       std::abs(actual - expected) > 1e-10 ||
+       std::abs(reverseActual - expected) > 1e-10){
+        throw std::runtime_error(caseName + ": incorrect segment-to-polygon distance");
+    }
+}
 }
 
 int main(){
@@ -85,5 +99,59 @@ int main(){
     expectSegmentDistance("non-intersecting perpendicular",
                           {{0,0},{4,0}},{{5,2},{5,4}},std::sqrt(5));
 
-    std::cout << "All point/segment clearance primitive tests passed.\n";
+    // Phase 3.1C: distance to the *filled* polygon, not only its edges.
+    const Polygon square{{{0,0},{4,0},{4,4},{0,4}}};
+    const Polygon clockwiseSquare{{{0,4},{4,4},{4,0},{0,0}}};
+
+    expectPolygonDistance("parallel above square",
+                          {{-1,5},{5,5}},square,1);
+    expectPolygonDistance("near convex corner",
+                          {{5,5},{6,6}},square,std::sqrt(2.0));
+    expectPolygonDistance("side near square",
+                          {{5,1},{7,1}},square,1);
+
+    // These must return zero even though the endpoints can both be outside.
+    expectPolygonDistance("crosses interior",
+                          {{-2,2},{6,2}},square,0);
+    expectPolygonDistance("tangential vertex contact",
+                          {{3,5},{5,3}},square,0);
+    expectPolygonDistance("touches boundary edge",
+                          {{-1,0},{1,0}},square,0);
+
+    // Endpoint containment catches segments strictly inside the filled region.
+    expectPolygonDistance("fully inside",
+                          {{1,1},{3,3}},square,0);
+    expectPolygonDistance("one endpoint inside",
+                          {{2,2},{6,2}},square,0);
+    expectPolygonDistance("zero length inside",
+                          {{2,2},{2,2}},square,0);
+    expectPolygonDistance("zero length outside",
+                          {{2,7},{2,7}},square,3);
+
+    expectPolygonDistance("clockwise winding",
+                          {{-1,5},{5,5}},clockwiseSquare,1);
+
+    // An L-shaped obstacle: the missing top-right quadrant is free space.
+    const Polygon concave{{
+        {0,0},{6,0},{6,2},{2,2},{2,6},{0,6}
+    }};
+    expectPolygonDistance("outside concave notch",
+                          {{2.5,2.5},{5.5,2.5}},concave,0.5);
+    expectPolygonDistance("inside concave arm",
+                          {{0.5,1.5},{1.5,4.5}},concave,0);
+    expectPolygonDistance("crosses concave interior",
+                          {{1,5},{5,1}},concave,0);
+    const Polygon reversedConcave{{
+        {0,6},{2,6},{2,2},{6,2},{6,0},{0,0}
+    }};
+    expectPolygonDistance("concave clockwise winding",
+                          {{2.5,2.5},{5.5,2.5}},reversedConcave,0.5);
+
+    // Existing PATHLAB geometry ignores polygons with fewer than 3 vertices.
+    const Polygon invalid{{{0,0},{2,0}}};
+    if(!std::isinf(segmentPolygonDistance({{1,1},{3,1}}, invalid))){
+        throw std::runtime_error("Invalid polygon must return +infinity");
+    }
+
+    std::cout << "All point/segment/polygon clearance primitives passed.\n";
 }
