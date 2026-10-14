@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <stdexcept>
 
 double pointSegmentDistance(const Point& p, const Segment& segment){
     const Point& a = segment.a;
@@ -80,4 +81,27 @@ double segmentPolygonDistance(const Segment& segment, const Polygon& polygon){
         }
     }
     return minimum;
+}
+
+bool segmentHasClearance(
+    const Segment& segment,
+    const std::vector<Polygon>& obstacles,
+    double radius
+){
+    // Reject nonsensical margins before evaluating any obstacles, including
+    // the empty-obstacle case.
+    if(!std::isfinite(radius) || radius < 0.0){
+        throw std::invalid_argument("Clearance radius must be finite and nonnegative");
+    }
+
+    // The segment is unsafe if even one obstacle is at or within the
+    // selected margin. The earlier distance primitive checks the ENTIRE
+    // candidate segment, not just its endpoints.
+    for(const Polygon& obstacle : obstacles){
+        if(segmentPolygonDistance(segment, obstacle) <= radius){
+            return false;
+        }
+    }
+
+    return true;
 }
