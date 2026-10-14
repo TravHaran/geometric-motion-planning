@@ -6,6 +6,7 @@
 #include "../planners/AStar.hpp"
 #include "../planners/BFS.hpp"
 #include "../planners/Dijkstra.hpp"
+#include "../ui/PathlabSidebar.hpp"
 
 #include <array>
 #include <optional>
@@ -256,27 +257,22 @@ void PathlabApp::handleMousePressed(
         return;
     }
 
-    // The preview HUD lives in screen coordinates. Intercept clicks before
-    // obstacle-vertex placement; the slider does not alter planner results.
-    const int px = event.position.x;
-    const int py = event.position.y;
-    if(px >= 22 && px <= 422 && py >= 78 && py <= 178){
-        algorithmDropdownOpen = false;
-        if(py >= 120 && py <= 157 && px >= 160 && px <= 400){
-            clearanceSliderDragging = true;
-            setClearancePreviewRadiusFromScreenX(px);
-        }else if(py >= 119 && py <= 158 && px >= 32 && px <= 148){
-            showClearancePreview = !showClearancePreview;
-            worldBackdropDirty = true;
-        }
-        return;
-    }
-
     // =====================================
     // UI interaction
     // =====================================
 
     const PathlabUIData uiData = buildUIData();
+    // Slider is a draggable control, separate from single-click action routing.
+    if(sidebarVisible && sidebarExpanded[1] &&
+       pathlab_sidebar::inScrollViewport(event.position,window.getSize()) &&
+       pathlab_sidebar::clearanceSlider(window.getSize(),uiData).contains(
+           sf::Vector2f(static_cast<float>(event.position.x),
+                        static_cast<float>(event.position.y)))){
+        clearanceSliderDragging = true;
+        algorithmDropdownOpen = false;
+        setClearancePreviewRadiusFromScreenX(event.position.x);
+        return;
+    }
 
     const PathlabUIInteraction uiInteraction =
         handlePathlabUIClick(
@@ -410,6 +406,25 @@ void PathlabApp::handleMousePressed(
             algorithmDropdownOpen =
                 false;
 
+            return;
+
+        case PathlabUIAction::ToggleSidebarSection:
+            if(uiInteraction.sectionIndex<sidebarExpanded.size()){
+                sidebarExpanded[uiInteraction.sectionIndex]=
+                    !sidebarExpanded[uiInteraction.sectionIndex];
+                algorithmDropdownOpen=false;
+                PathlabUIData current=buildUIData();
+                sidebarScrollOffset=std::min(sidebarScrollOffset,
+                    pathlab_sidebar::maxScroll(window.getSize(),current));
+            }
+            return;
+
+        case PathlabUIAction::ToggleClearancePreview:
+            showClearancePreview = !showClearancePreview;
+            worldBackdropDirty = true;
+            return;
+
+        case PathlabUIAction::ConsumeSidebarClick:
             return;
 
         case PathlabUIAction::StepPlayback:
@@ -583,13 +598,16 @@ void PathlabApp::handleMouseWheelScrolled(
         return;
     }
 
-    if(
-        event.wheel != sf::Mouse::Wheel::Vertical
-        ||
-        !isInsideCanvas(event.position)
-    ){
+    if(event.wheel != sf::Mouse::Wheel::Vertical)return;
+    if(sidebarVisible &&
+       pathlab_sidebar::inScrollViewport(event.position,window.getSize())){
+        algorithmDropdownOpen=false;
+        const auto data=buildUIData();
+        sidebarScrollOffset=std::clamp(sidebarScrollOffset-event.delta*38.0f,
+                 0.0f,pathlab_sidebar::maxScroll(window.getSize(),data));
         return;
     }
+    if(!isInsideCanvas(event.position))return;
 
     const sf::Vector2f worldBeforeZoom =
         window.mapPixelToCoords(event.position, canvasView);
@@ -789,7 +807,6 @@ void PathlabApp::render(){
 
     const PathlabUIData uiData = buildUIData();
 
-    drawClearanceHud(window);
     drawPathlabUI(window, uiFont, uiData, glassBackdrop);
 
     window.display();
@@ -817,12 +834,11 @@ void PathlabApp::renderWorld(sf::RenderTarget& target){
 
 
 void PathlabApp::setClearancePreviewRadiusFromScreenX(int x){
-    const float normalized = std::clamp(
-        (static_cast<float>(x)-160.0f)/240.0f,0.0f,1.0f
-    );
-    // Snap to whole world units for a stable, interpretable UI value.
-    clearancePreviewRadius = std::round(normalized*120.0f);
-    worldBackdropDirty = true;
+    const auto bounds=pathlab_sidebar::clearanceSlider(window.getSize(),buildUIData());
+    const float normalized=std::clamp(
+        (static_cast<float>(x)-bounds.position.x)/bounds.size.x,0.0f,1.0f);
+    clearancePreviewRadius=std::round(normalized*120.0f);
+    worldBackdropDirty=true;
 }
 
 void PathlabApp::drawClearancePreview(sf::RenderTarget& target){
@@ -862,52 +878,6 @@ void PathlabApp::drawClearancePreview(sf::RenderTarget& target){
             target.draw(cap);
         }
     }
-}
-
-void PathlabApp::drawClearanceHud(sf::RenderTarget& target){
-    sf::RectangleShape background({400.0f,100.0f});
-    background.setPosition({22.0f,78.0f});
-    background.setFillColor(sf::Color(24,30,41,235));
-    background.setOutlineThickness(1.0f);
-    background.setOutlineColor(sf::Color(72,82,101));
-    target.draw(background);
-
-    sf::Text heading(uiFont);
-    heading.setCharacterSize(13);
-    heading.setFillColor(sf::Color(235,239,245));
-    heading.setString("CLEARANCE PREVIEW  |  visual only - not enforced");
-    heading.setPosition({34.0f,88.0f});
-    target.draw(heading);
-
-    sf::Text showLabel(uiFont);
-    showLabel.setCharacterSize(12);
-    showLabel.setFillColor(showClearancePreview?
-        sf::Color(104,225,172):sf::Color(148,158,175));
-    showLabel.setString(showClearancePreview?"[x] Show":"[ ] Show");
-    showLabel.setPosition({34.0f,123.0f});
-    target.draw(showLabel);
-
-    sf::RectangleShape track({240.0f,4.0f});
-    track.setPosition({160.0f,136.0f});
-    track.setFillColor(sf::Color(84,97,118));
-    target.draw(track);
-    sf::RectangleShape filled({2.0f*clearancePreviewRadius,4.0f});
-    filled.setPosition({160.0f,136.0f});
-    filled.setFillColor(sf::Color(250,139,98));
-    target.draw(filled);
-    sf::CircleShape thumb(7.0f);
-    thumb.setOrigin({7.0f,7.0f});
-    thumb.setPosition({160.0f+2.0f*clearancePreviewRadius,138.0f});
-    thumb.setFillColor(sf::Color(251,181,138));
-    target.draw(thumb);
-
-    sf::Text footer(uiFont);
-    footer.setCharacterSize(12);
-    footer.setFillColor(sf::Color(172,184,201));
-    footer.setString("Radius: "+std::to_string(static_cast<int>(clearancePreviewRadius))+
-                     " world units   |   C toggle   |   [ ] adjust");
-    footer.setPosition({34.0f,157.0f});
-    target.draw(footer);
 }
 
 void PathlabApp::drawObstacles(sf::RenderTarget& target){
@@ -1165,6 +1135,10 @@ PathlabUIData PathlabApp::buildUIData() const
     data.algorithmDropdownOpen = algorithmDropdownOpen;
     data.helpOverlayOpen = helpOverlayOpen;
     data.sidebarVisible = sidebarVisible;
+    data.sidebarExpanded = sidebarExpanded;
+    data.sidebarScrollOffset = sidebarScrollOffset;
+    data.clearancePreviewRadius = clearancePreviewRadius;
+    data.showClearancePreview = showClearancePreview;
     data.canRunPlanner = canRunPlanner();
 
     if(!start.has_value() && !goal.has_value()){
