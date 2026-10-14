@@ -1,0 +1,20 @@
+name: Biped prototype build
+on:
+  push:
+    branches: [feature/clearance-geometry]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  build-test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: brew install cmake sfml
+      - name: Configure
+        run: cmake -S . -B build-ci -DCMAKE_BUILD_TYPE=Debug
+      - name: Build
+        run: cmake --build build-ci --parallel 4
+      - name: Run tests
+        run: ctest --test-dir build-ci --output-on-failure
