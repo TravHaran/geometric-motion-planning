@@ -36,6 +36,7 @@ add_library(
     pathlab_geometry
     src/geometry/Geometry.cpp
     src/geometry/Clearance.cpp
+    src/geometry/OffsetWaypoints.cpp
     src/geometry/Triangulation.cpp
 )
 
@@ -265,6 +266,11 @@ add_test(NAME geometry COMMAND geometry_tests)
 add_executable(clearance_tests tests/clearance_tests.cpp)
 target_link_libraries(clearance_tests PRIVATE pathlab_geometry)
 add_test(NAME clearance COMMAND clearance_tests)
+
+# Phase 3.1E step 1: offset waypoint candidates, before graph integration.
+add_executable(offset_waypoint_tests tests/offset_waypoint_tests.cpp)
+target_link_libraries(offset_waypoint_tests PRIVATE pathlab_geometry)
+add_test(NAME offset_waypoints COMMAND offset_waypoint_tests)
 
 add_executable(
     graph_tests
