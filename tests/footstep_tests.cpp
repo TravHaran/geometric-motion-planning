@@ -2,6 +2,7 @@
 #include "../src/geometry/Clearance.hpp"
 #include <cassert>
 #include <cmath>
+#include <iostream>
 
 int main() {
     using namespace footstep;
@@ -24,6 +25,7 @@ int main() {
     Result kinDetour=solve(blocked,cfg,Layer::Kinematic);
     assert(kinDetour.reachedGoal);
     Result dynDetour=solve(blocked,cfg,Layer::Dynamic);
+    std::cerr << "Dynamic detour: expanded=" << dynDetour.expanded << " geometryReject=" << dynDetour.rejectedGeometry << " kinReject=" << dynDetour.rejectedKinematics << " dynamicReject=" << dynDetour.rejectedDynamics << " steps=" << dynDetour.footsteps.size() << " lastX=" << (dynDetour.footsteps.empty()?0:dynDetour.footsteps.back().support.x) << " lastY=" << (dynDetour.footsteps.empty()?0:dynDetour.footsteps.back().support.y) << "\n";
     assert(dynDetour.reachedGoal);
     open.goal={2.18,5.18};
     Result kin=solve(open,cfg,Layer::Kinematic);
