@@ -99,6 +99,7 @@ add_library(
     src/ui/PathlabUI.cpp
     src/ui/PathlabUIInteraction.cpp
     src/ui/PathlabUILayout.cpp
+    src/ui/PathlabSidebar.cpp
 )
 
 target_include_directories(
