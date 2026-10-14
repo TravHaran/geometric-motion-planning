@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 
 #include <optional>
+#include <array>
 #include <vector>
 
 #include "../geometry/Point.hpp"
@@ -98,6 +99,11 @@ class PathlabApp{
         void drawCanvasBackground(sf::RenderTarget& target);
 
         void drawObstacles(sf::RenderTarget& target);
+
+        // Pure rendering: the safety band is not yet used by search.
+        void drawClearancePreview(sf::RenderTarget& target);
+
+        void setClearancePreviewRadiusFromScreenX(int x);
 
         void drawCurrentObstacle(sf::RenderTarget& target);
 
@@ -228,6 +234,13 @@ class PathlabApp{
         bool planningResultAvailable = false;
 
         bool showObstacles = true;
+
+        // The geometric backend remains a student-owned, later milestone.
+        bool showClearancePreview = true;
+        float clearancePreviewRadius = 20.0f;
+        bool clearanceSliderDragging = false;
+        std::array<bool,8> sidebarExpanded{{true,true,true,false,true,false,false,false}};
+        float sidebarScrollOffset = 0.0f;
 
         bool showVisibilityGraph = true;
 

@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 
 #include <cstddef>
+#include <array>
 #include <string>
 #include <vector>
 
@@ -27,7 +28,10 @@ enum class PathlabUIAction{
     CyclePlaybackSpeed,
     ToggleAlgorithmDropdown,
     SelectAlgorithm,
-    CloseAlgorithmDropdown
+    CloseAlgorithmDropdown,
+    ToggleSidebarSection,
+    ToggleClearancePreview,
+    ConsumeSidebarClick
 };
 
 enum class PathlabPlannerStatus{
@@ -42,13 +46,16 @@ enum class PathlabPlannerStatus{
 struct PathlabUIInteraction{
     PathlabUIAction action = PathlabUIAction::None;
     std::size_t algorithmIndex = 0;
+    std::size_t sectionIndex = 0;
 
     PathlabUIInteraction(
         PathlabUIAction actionValue = PathlabUIAction::None,
-        std::size_t algorithmIndexValue = 0
+        std::size_t algorithmIndexValue = 0,
+        std::size_t sectionIndexValue = 0
     ):
         action(actionValue),
-        algorithmIndex(algorithmIndexValue)
+        algorithmIndex(algorithmIndexValue),
+        sectionIndex(sectionIndexValue)
     {
     }
 };
@@ -63,6 +70,12 @@ struct PathlabUIData{
     bool helpOverlayOpen = false;
 
     bool sidebarVisible = true;
+
+    // Reusable incremental sidebar sections (scroll and accordion state).
+    std::array<bool,8> sidebarExpanded{{true,true,true,false,true,false,false,false}};
+    float sidebarScrollOffset = 0.0f;
+    float clearancePreviewRadius = 20.0f;
+    bool showClearancePreview = true;
 
     PathlabPlannerStatus plannerStatus =
         PathlabPlannerStatus::SetStartAndGoal;

@@ -6,6 +6,7 @@
 #include "../planners/AStar.hpp"
 #include "../planners/BFS.hpp"
 #include "../planners/Dijkstra.hpp"
+#include "../ui/PathlabSidebar.hpp"
 
 #include <array>
 #include <optional>
@@ -207,6 +208,9 @@ void PathlabApp::processEvent(const sf::Event& event){
 
     if(event.is<sf::Event::Resized>()){
         updateViewLayout();
+        const auto currentUI=buildUIData();
+        sidebarScrollOffset=std::min(sidebarScrollOffset,
+            pathlab_sidebar::maxScroll(window.getSize(),currentUI));
 
         if(glassBlurAvailable && !resizeGlassRenderTargets()){
             glassBlurAvailable = false;
@@ -235,6 +239,7 @@ void PathlabApp::processEvent(const sf::Event& event){
 
     if(event.is<sf::Event::FocusLost>()){
         canvasPanning = false;
+        clearanceSliderDragging = false;
     }
 
     if(const auto* keyPressed = event.getIf<sf::Event::KeyPressed>()){
@@ -260,6 +265,17 @@ void PathlabApp::handleMousePressed(
     // =====================================
 
     const PathlabUIData uiData = buildUIData();
+    // Slider is a draggable control, separate from single-click action routing.
+    if(sidebarVisible && sidebarExpanded[1] &&
+       pathlab_sidebar::inScrollViewport(event.position,window.getSize()) &&
+       pathlab_sidebar::clearanceSlider(window.getSize(),uiData).contains(
+           sf::Vector2f(static_cast<float>(event.position.x),
+                        static_cast<float>(event.position.y)))){
+        clearanceSliderDragging = true;
+        algorithmDropdownOpen = false;
+        setClearancePreviewRadiusFromScreenX(event.position.x);
+        return;
+    }
 
     const PathlabUIInteraction uiInteraction =
         handlePathlabUIClick(
@@ -395,6 +411,25 @@ void PathlabApp::handleMousePressed(
 
             return;
 
+        case PathlabUIAction::ToggleSidebarSection:
+            if(uiInteraction.sectionIndex<sidebarExpanded.size()){
+                sidebarExpanded[uiInteraction.sectionIndex]=
+                    !sidebarExpanded[uiInteraction.sectionIndex];
+                algorithmDropdownOpen=false;
+                PathlabUIData current=buildUIData();
+                sidebarScrollOffset=std::min(sidebarScrollOffset,
+                    pathlab_sidebar::maxScroll(window.getSize(),current));
+            }
+            return;
+
+        case PathlabUIAction::ToggleClearancePreview:
+            showClearancePreview = !showClearancePreview;
+            worldBackdropDirty = true;
+            return;
+
+        case PathlabUIAction::ConsumeSidebarClick:
+            return;
+
         case PathlabUIAction::StepPlayback:
 
             playbackActive = true;
@@ -516,6 +551,9 @@ void PathlabApp::handleMousePressed(
 void PathlabApp::handleMouseReleased(
     const sf::Event::MouseButtonReleased& event
 ){
+    if(event.button == sf::Mouse::Button::Left){
+        clearanceSliderDragging = false;
+    }
     if(canvasPanning && event.button == canvasPanButton){
         canvasPanning = false;
     }
@@ -524,6 +562,10 @@ void PathlabApp::handleMouseReleased(
 void PathlabApp::handleMouseMoved(
     const sf::Event::MouseMoved& event
 ){
+    if(clearanceSliderDragging){
+        setClearancePreviewRadiusFromScreenX(event.position.x);
+        return;
+    }
     if(helpOverlayOpen){
         return;
     }
@@ -559,13 +601,16 @@ void PathlabApp::handleMouseWheelScrolled(
         return;
     }
 
-    if(
-        event.wheel != sf::Mouse::Wheel::Vertical
-        ||
-        !isInsideCanvas(event.position)
-    ){
+    if(event.wheel != sf::Mouse::Wheel::Vertical)return;
+    if(sidebarVisible &&
+       pathlab_sidebar::inScrollViewport(event.position,window.getSize())){
+        algorithmDropdownOpen=false;
+        const auto data=buildUIData();
+        sidebarScrollOffset=std::clamp(sidebarScrollOffset-event.delta*38.0f,
+                 0.0f,pathlab_sidebar::maxScroll(window.getSize(),data));
         return;
     }
+    if(!isInsideCanvas(event.position))return;
 
     const sf::Vector2f worldBeforeZoom =
         window.mapPixelToCoords(event.position, canvasView);
@@ -612,6 +657,22 @@ void PathlabApp::handleKeyPressed(
             helpOverlayOpen = false;
         }
 
+        return;
+    }
+
+    if(event.code == sf::Keyboard::Key::C){
+        showClearancePreview = !showClearancePreview;
+        worldBackdropDirty = true;
+        return;
+    }
+    if(event.code == sf::Keyboard::Key::LBracket){
+        clearancePreviewRadius = std::max(0.0f,clearancePreviewRadius-5.0f);
+        worldBackdropDirty = true;
+        return;
+    }
+    if(event.code == sf::Keyboard::Key::RBracket){
+        clearancePreviewRadius = std::min(120.0f,clearancePreviewRadius+5.0f);
+        worldBackdropDirty = true;
         return;
     }
 
@@ -759,6 +820,8 @@ void PathlabApp::renderWorld(sf::RenderTarget& target){
 
     drawVisibilityGraph(target);
 
+    drawClearancePreview(target);
+
     drawObstacles(target);
 
     drawExploredNodes(target);
@@ -770,6 +833,54 @@ void PathlabApp::renderWorld(sf::RenderTarget& target){
     drawCurrentObstacle(target);
 
     drawStartAndGoal(target);
+}
+
+
+void PathlabApp::setClearancePreviewRadiusFromScreenX(int x){
+    const auto bounds=pathlab_sidebar::clearanceSlider(window.getSize(),buildUIData());
+    const float normalized=std::clamp(
+        (static_cast<float>(x)-bounds.position.x)/bounds.size.x,0.0f,1.0f);
+    clearancePreviewRadius=std::round(normalized*120.0f);
+    worldBackdropDirty=true;
+}
+
+void PathlabApp::drawClearancePreview(sf::RenderTarget& target){
+    if(!showClearancePreview || !showObstacles || clearancePreviewRadius<=0.0f){
+        return;
+    }
+    // This *only draws* the boundary-distance neighborhood of each polygon.
+    // The existing Dijkstra/A* algorithms do NOT check this margin.
+    // Edge strips plus vertex disks form a translucent visualization of the
+    // Euclidean disk-offset around polygon boundaries (polygon interiors are
+    // drawn separately by drawObstacles).
+    const sf::Color color(250,139,98,46);
+    const float radius=clearancePreviewRadius;
+    sf::CircleShape cap(radius,28);
+    cap.setOrigin({radius,radius});
+    cap.setFillColor(color);
+    for(const Polygon& poly:obstacles){
+        const auto n=poly.vertices.size();
+        if(n<3)continue;
+        for(std::size_t i=0;i<n;++i){
+            const Point& a=poly.vertices[i];
+            const Point& b=poly.vertices[(i+1)%n];
+            const float dx=static_cast<float>(b.x-a.x);
+            const float dy=static_cast<float>(b.y-a.y);
+            const float length=std::hypot(dx,dy);
+            if(length>0.0f){
+                sf::RectangleShape strip({length,2.0f*radius});
+                strip.setOrigin({0.0f,radius});
+                strip.setPosition({static_cast<float>(a.x),
+                                   static_cast<float>(a.y)});
+                strip.setRotation(sf::radians(std::atan2(dy,dx)));
+                strip.setFillColor(color);
+                target.draw(strip);
+            }
+            cap.setPosition({static_cast<float>(a.x),
+                             static_cast<float>(a.y)});
+            target.draw(cap);
+        }
+    }
 }
 
 void PathlabApp::drawObstacles(sf::RenderTarget& target){
@@ -1027,6 +1138,10 @@ PathlabUIData PathlabApp::buildUIData() const
     data.algorithmDropdownOpen = algorithmDropdownOpen;
     data.helpOverlayOpen = helpOverlayOpen;
     data.sidebarVisible = sidebarVisible;
+    data.sidebarExpanded = sidebarExpanded;
+    data.sidebarScrollOffset = sidebarScrollOffset;
+    data.clearancePreviewRadius = clearancePreviewRadius;
+    data.showClearancePreview = showClearancePreview;
     data.canRunPlanner = canRunPlanner();
 
     if(!start.has_value() && !goal.has_value()){

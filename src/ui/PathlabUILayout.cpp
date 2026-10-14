@@ -24,26 +24,10 @@ float getUsableCanvasWidth(
 }
 
 sf::FloatRect getRunPlannerButtonBounds(const sf::Vector2u& windowSize){
-    const float windowWidth = static_cast<float>(windowSize.x);
-
-    const float windowHeight = static_cast<float>(windowSize.y);
-
-    const float panelX = windowWidth - PATHLAB_SIDE_PANEL_WIDTH;
-
-    const float bottomInset =
-        useCompactSidebarLayout(windowSize)
-            ? 52.0f
-            : 56.0f;
-
-    const float buttonY =
-        windowHeight
-        - PATHLAB_BOTTOM_BAR_HEIGHT
-        - bottomInset;
-
-    return sf::FloatRect(
-        sf::Vector2f(panelX + 20.0f, buttonY),
-        sf::Vector2f(PATHLAB_SIDE_PANEL_WIDTH - 40.0f, 40.0f)
-    );
+    const float x=static_cast<float>(windowSize.x)-PATHLAB_SIDE_PANEL_WIDTH;
+    // Fixed immediately below the top bar; outside the scrolling viewport.
+    return sf::FloatRect(sf::Vector2f(x+18.0f,PATHLAB_TOP_BAR_HEIGHT+17.0f),
+                         sf::Vector2f(PATHLAB_SIDE_PANEL_WIDTH-36.0f,43.0f));
 }
 
 sf::FloatRect getResetCameraButtonBounds(
