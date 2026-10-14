@@ -2,6 +2,8 @@
 
 #include <cmath>
 #include <iostream>
+#include <limits>
+#include <vector>
 #include <stdexcept>
 #include <string>
 
@@ -38,6 +40,27 @@ void expectPolygonDistance(const std::string& caseName,
        std::abs(reverseActual - expected) > 1e-10){
         throw std::runtime_error(caseName + ": incorrect segment-to-polygon distance");
     }
+}
+void expectClearance(const std::string& name,
+                     const Segment& candidate,
+                     const std::vector<Polygon>& obstacles,
+                     double radius,
+                     bool expected){
+    const bool actual = segmentHasClearance(candidate, obstacles, radius);
+    const Segment backwards{candidate.b,candidate.a};
+    const bool reversed = segmentHasClearance(backwards, obstacles, radius);
+    if(actual != expected || reversed != expected){
+        throw std::runtime_error(name + ": clearance classification incorrect");
+    }
+}
+void expectInvalidRadius(const std::string& name, double radius){
+    bool threw = false;
+    try{
+        (void)segmentHasClearance({{0,0},{1,0}}, {}, radius);
+    }catch(const std::invalid_argument&){
+        threw = true;
+    }
+    if(!threw) throw std::runtime_error(name + ": expected invalid_argument");
 }
 }
 
@@ -153,5 +176,58 @@ int main(){
         throw std::runtime_error("Invalid polygon must return +infinity");
     }
 
-    std::cout << "All point/segment/polygon clearance primitives passed.\n";
+    // Phase 3.1D: strict continuous clearance (boundary contact is blocked).
+    const std::vector<Polygon> oneSquare{square};
+    expectClearance("radius zero, detached", {{-1,5},{5,5}}, oneSquare, 0.0, true);
+    expectClearance("radius below distance", {{-1,5},{5,5}}, oneSquare, 0.99, true);
+    expectClearance("radius exactly distance", {{-1,5},{5,5}}, oneSquare, 1.0, false);
+    expectClearance("radius larger than distance", {{-1,5},{5,5}}, oneSquare, 1.01, false);
+    expectClearance("two-unit separation", {{-1,6},{5,6}}, oneSquare, 1.0, true);
+    expectClearance("radius equals two", {{-1,6},{5,6}}, oneSquare, 2.0, false);
+
+    // Collision must reject even when r == 0, unlike original legacy visibility
+    // graph paths that intentionally allow touching polygon vertices.
+    expectClearance("interior traversal", {{-1,2},{5,2}}, oneSquare, 0.0, false);
+    expectClearance("boundary contact", {{-1,4},{1,4}}, oneSquare, 0.0, false);
+    expectClearance("fully inside", {{1,1},{3,3}}, oneSquare, 0.0, false);
+    expectClearance("point touching corner", {{4,4},{4,4}}, oneSquare, 0.0, false);
+    expectClearance("point strictly outside", {{5,2},{5,2}}, oneSquare, 0.5, true);
+    expectClearance("point at clearance boundary", {{5,2},{5,2}}, oneSquare, 1.0, false);
+
+    // Closest approach at a corner, rather than a projection onto an edge.
+    expectClearance("corner margin passes", {{5,5},{6,6}}, oneSquare, 1.4, true);
+    expectClearance("corner margin fails", {{5,5},{6,6}}, oneSquare, 1.5, false);
+
+    // All obstacles must be checked; the nearest could be any polygon.
+    const Polygon farSquare{{{10,0},{14,0},{14,4},{10,4}}};
+    const std::vector<Polygon> twoSquares{square,farSquare};
+    expectClearance("two obstacles, safe", {{9,5},{15,5}}, twoSquares, 0.5, true);
+    expectClearance("second obstacle rejects", {{9,5},{15,5}}, twoSquares, 1.0, false);
+    expectClearance("second obstacle crossed", {{9,2},{15,2}}, twoSquares, 0.0, false);
+
+    // The concave notch is free, but it has its own nearest boundary.
+    expectClearance("concave notch safe",
+                    {{2.5,2.5},{5.5,2.5}}, {concave}, 0.49, true);
+    expectClearance("concave notch boundary",
+                    {{2.5,2.5},{5.5,2.5}}, {concave}, 0.5, false);
+    expectClearance("clockwise shape",
+                    {{-1,5},{5,5}}, {clockwiseSquare}, 1.0, false);
+
+    // Empty scenes are safe, and invalid polygons follow the existing
+    // convention that polygons with < 3 vertices do not form obstacles.
+    expectClearance("no obstacles", {{0,0},{5,0}}, {}, 100.0, true);
+    expectClearance("only degenerate polygon", {{1,1},{3,1}}, {invalid}, 100.0, true);
+    expectClearance("invalid plus valid", {{-1,5},{5,5}},
+                    {invalid,square}, 1.0, false);
+
+    // Bad inputs must be rejected even when no obstacles exist.
+    expectInvalidRadius("negative radius", -1.0);
+    expectInvalidRadius("negative infinity",
+                        -std::numeric_limits<double>::infinity());
+    expectInvalidRadius("positive infinity",
+                        std::numeric_limits<double>::infinity());
+    expectInvalidRadius("NaN radius",
+                        std::numeric_limits<double>::quiet_NaN());
+
+    std::cout << "All geometric clearance distance and predicate tests passed.\n";
 }
