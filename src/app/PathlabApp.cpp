@@ -208,6 +208,9 @@ void PathlabApp::processEvent(const sf::Event& event){
 
     if(event.is<sf::Event::Resized>()){
         updateViewLayout();
+        const auto currentUI=buildUIData();
+        sidebarScrollOffset=std::min(sidebarScrollOffset,
+            pathlab_sidebar::maxScroll(window.getSize(),currentUI));
 
         if(glassBlurAvailable && !resizeGlassRenderTargets()){
             glassBlurAvailable = false;
