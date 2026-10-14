@@ -20,6 +20,11 @@ int main() {
         assert(isSegmentClearanceFree({detour.geometricPath[i-1],detour.geometricPath[i]},
                                      blocked.obstacles,cfg.clearance));
     // Tiny goal allows a complete, independently checkable one-step solution.
+    // Regression: the showcase should actually be navigable by both step planners.
+    Result kinDetour=solve(blocked,cfg,Layer::Kinematic);
+    assert(kinDetour.reachedGoal);
+    Result dynDetour=solve(blocked,cfg,Layer::Dynamic);
+    assert(dynDetour.reachedGoal);
     open.goal={2.18,5.18};
     Result kin=solve(open,cfg,Layer::Kinematic);
     assert(kin.reachedGoal && kin.footsteps.size()>1);
