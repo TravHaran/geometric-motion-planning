@@ -86,7 +86,17 @@ std::vector<Point> gridPath(const Scene& sc, const Settings& st, std::size_t& ex
         if(cross<1e-7 && safeSegment(sc,out[i-1],out[i+1],st.clearance))out.erase(out.begin()+static_cast<std::ptrdiff_t>(i));
         else ++i;
     }
-    return out;
+    // String-pull the grid route through exactly checked clearance edges.
+    std::vector<Point> simplified;
+    std::size_t i=0;
+    while(i+1<out.size()){
+        simplified.push_back(out[i]);
+        std::size_t j=out.size()-1;
+        while(j>i+1 && !safeSegment(sc,out[i],out[j],st.clearance))--j;
+        i=j;
+    }
+    simplified.push_back(out.back());
+    return simplified;
 }
 double routeDistance(Point p,const std::vector<Point>& path){
     if(path.size()<2)return 0;
@@ -98,6 +108,21 @@ double routeDistance(Point p,const std::vector<Point>& path){
         nearest=std::min(nearest,dist(p,plus(a,times(v,t))));
     }
     return nearest;
+}
+double routeRemaining(Point p,const std::vector<Point>& path){
+    if(path.size()<2)return 0;
+    double remaining=0;
+    double score=std::numeric_limits<double>::infinity();
+    // Traverse from goal backward to measure progress along the global route.
+    for(std::size_t i=path.size()-1;i>0;--i){
+        Point a=path[i-1],b=path[i],v=minus(b,a),w=minus(p,a);
+        double length=norm(v), t=length>1e-12?
+            std::clamp((v.x*w.x+v.y*w.y)/(length*length),0.0,1.0):0.0;
+        Point projection=plus(a,times(v,t));
+        score=std::min(score,dist(p,projection)+remaining+(1.0-t)*length);
+        remaining+=length;
+    }
+    return score;
 }
 std::string stateKey(const State& s,bool dynamic){
     auto q=[](double v,double cell)->int{return static_cast<int>(std::lround(v/cell));};
@@ -165,7 +190,7 @@ Result solve(const Scene& sc,const Settings& st,Layer layer){
     std::priority_queue<QueueItem> open;
     std::unordered_map<std::string,double> best;
     auto heur=[&](Point p){
-        return dist(p,sc.goal)/std::max(st.maxStep,.4);
+        return routeRemaining(p,out.geometricPath)/std::max(st.maxStep,.4);
     };
     bool dynamic=layer==Layer::Dynamic;
     auto key0=stateKey(first,dynamic);
@@ -198,6 +223,11 @@ Result solve(const Scene& sc,const Settings& st,Layer layer){
             Point landing=plus(cur.support,plus(times(forward,d),times(left,st.stepWidth*cur.nextSide)));
             double actualLength=dist(cur.support,landing);
             if(actualLength>st.maxStep+1e-9){++out.rejectedKinematics;continue;}
+            // Focus expensive higher-dimensional search near the already computed
+            // collision-free route. The corridor is a heuristic restriction.
+            if(routeDistance(landing,out.geometricPath)>1.8){
+                ++out.rejectedGeometry;continue;
+            }
             // No point may be accepted merely by being outside an obstacle:
             // test the entire swing segment (other foot -> new foot).
             if(!safe(sc,landing,.12)||!safeSegment(sc,cur.other,landing,.12)){
@@ -241,8 +271,7 @@ Result solve(const Scene& sc,const Settings& st,Layer layer){
             best[key]=successor.g;
             int index=static_cast<int>(nodes.size());
             nodes.push_back(successor);
-            double guide=.1*routeDistance(landing,out.geometricPath);
-            open.push({successor.g+1.12*heur(landing)+guide,successor.g,index});
+            open.push({successor.g+1.45*heur(landing),successor.g,index});
         }
     }
     std::vector<State> reverse;
