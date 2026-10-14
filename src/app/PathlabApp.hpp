@@ -99,6 +99,11 @@ class PathlabApp{
 
         void drawObstacles(sf::RenderTarget& target);
 
+        // Pure rendering: the safety band is not yet used by search.
+        void drawClearancePreview(sf::RenderTarget& target);
+
+        void drawClearanceHud(sf::RenderTarget& target);
+
         void drawCurrentObstacle(sf::RenderTarget& target);
 
         void drawStartAndGoal(sf::RenderTarget& target);
@@ -228,6 +233,10 @@ class PathlabApp{
         bool planningResultAvailable = false;
 
         bool showObstacles = true;
+
+        // The geometric backend remains a student-owned, later milestone.
+        bool showClearancePreview = true;
+        float clearancePreviewRadius = 20.0f;
 
         bool showVisibilityGraph = true;
 
