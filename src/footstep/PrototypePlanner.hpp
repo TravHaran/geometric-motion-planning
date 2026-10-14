@@ -20,7 +20,7 @@ struct Scene {
     double width = 16.0;
     double height = 10.0;
     Point start{1.2, 4.95};
-    Point goal{14.45, 4.95};
+    Point goal{12.60, 4.65};
     std::vector<Polygon> obstacles;
 };
 struct State {
