@@ -35,6 +35,7 @@ find_package(
 add_library(
     pathlab_geometry
     src/geometry/Geometry.cpp
+    src/geometry/Clearance.cpp
     src/geometry/Triangulation.cpp
 )
 
@@ -324,3 +325,8 @@ target_link_libraries(
 )
 
 add_test(NAME pathlab_ui COMMAND pathlab_ui_tests)
+
+# Phase 3.1 clearance regression tests
+add_executable(clearance_tests tests/clearance_tests.cpp)
+target_link_libraries(clearance_tests PRIVATE pathlab_geometry)
+add_test(NAME clearance COMMAND clearance_tests)
