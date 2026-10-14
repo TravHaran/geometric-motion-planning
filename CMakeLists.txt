@@ -330,3 +330,18 @@ add_test(NAME pathlab_ui COMMAND pathlab_ui_tests)
 add_executable(clearance_tests tests/clearance_tests.cpp)
 target_link_libraries(clearance_tests PRIVATE pathlab_geometry)
 add_test(NAME clearance COMMAND clearance_tests)
+
+# ---------------------------------
+# Hierarchical biped planner prototype
+# ---------------------------------
+add_library(pathlab_footstep src/footstep/PrototypePlanner.cpp)
+target_link_libraries(pathlab_footstep PUBLIC pathlab_geometry)
+target_include_directories(pathlab_footstep PUBLIC src)
+
+add_executable(demo_3a demos/demo_3a_footsteps.cpp)
+target_link_libraries(demo_3a PRIVATE pathlab_footstep SFML::Graphics SFML::Window SFML::System)
+copy_pathlab_assets(demo_3a)
+
+add_executable(footstep_tests tests/footstep_tests.cpp)
+target_link_libraries(footstep_tests PRIVATE pathlab_footstep)
+add_test(NAME footstep COMMAND footstep_tests)
